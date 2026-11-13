@@ -185,3 +185,8 @@ After an independent grade of the live page (5 out of 10):
   tighter expanded view, wider text column on phones, 24-hour times.
 - Runner: starting again replaces a running copy; desktop shortcut created on first start;
   retries after an error; `out/run.log` and `out/diag.json` record what each run did.
+
+## 2026-11-13, 17:00
+- Review: accuracy 6, selection 5, readability 6.5. Counted-word lines ("nvidia: CEO jensen huang chinese") were the main drag.
+- A story with no clear sentence or headline is now left off; spare candidates fill its place. Up to 9 day lines.
+- Every line shows its hourly rate (+0 included); legend says how lines are ranked.

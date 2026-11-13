@@ -74,10 +74,11 @@ BOOTSTRAP = int(os.environ.get("BOOTSTRAP_SLOTS", "32"))    # first run looks ba
 MAX_CATCHUP = 32
 BUDGET = int(os.environ.get("BUDGET_SECONDS", "420"))       # stop taking new slots after this
 NEW_LINES = int(os.environ.get("NEW_LINES", "5"))            # lines in "new in the last 3 hours"
-DAY_LINES = int(os.environ.get("DAY_LINES", "7"))            # lines in "last 24 hours"
+DAY_LINES = int(os.environ.get("DAY_LINES", "9"))            # lines in "last 24 hours"
 NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs this much coverage to be listed
 DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "8"))  # so does an older one: a short list beats a padded one
-COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "20"))  # a line left as counted words must be bigger still
+COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "1e9"))  # a line left as counted words: never shown
+SPARE_LINES = 3                               # extra candidates, in case some get no clear sentence
 MIN_OUTLETS = int(os.environ.get("MIN_OUTLETS", "5"))       # outlets needed to appear at all
 NAME_MIN = int(os.environ.get("NAME_MIN", "10"))            # wordings needed before a person is named
 HEADLINES = int(os.environ.get("HEADLINES", "3"))           # real headlines shown on tap (0 = none)
@@ -1482,7 +1483,7 @@ def render(state, now, cmap, built):
             if sid in stories and len(stories[sid]["d"]) >= MIN_OUTLETS
             and (domestic(stories[sid]) or not worldwide_enough(stories[sid]))]
     lines, picks, shown_stories = [], {}, []
-    room = {"new": NEW_LINES, "day": DAY_LINES}
+    room = {"new": NEW_LINES + SPARE_LINES, "day": DAY_LINES + SPARE_LINES}
     per_country, per_region = Counter(), Counter()
     for sid in ranked:
         s = stories[sid]
@@ -1565,6 +1566,13 @@ def render(state, now, cmap, built):
     ai = add_sentences(state, lines, picks, time.time())
     # Counted words are hard to read; a small story that got no sentence is left out.
     lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
+    cap = {"new": NEW_LINES, "day": DAY_LINES}
+    kept = []
+    for l in lines:                                               # spares fill only gaps
+        if cap[l["section"]]:
+            cap[l["section"]] -= 1
+            kept.append(l)
+    lines = kept
     return {
         "v": 4,
         "ai": ai,

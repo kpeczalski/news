@@ -88,7 +88,7 @@
     }
     var m = el("span", "m");
     var bits = [(l.countries || 1) + (l.countries === 1 ? " country" : " countries")];
-    if (l.new_hour) bits.push("+" + l.new_hour.toLocaleString() + " outlets/h");
+    bits.push("+" + (l.new_hour || 0).toLocaleString() + " outlets/h");
     m.appendChild(document.createTextNode(bits.join(" · ")));
     (l.show_tags || l.tags || []).forEach(function (t) {
       if (TAGS[t]) { m.appendChild(document.createTextNode(" · ")); m.appendChild(el("span", "tag", TAGS[t])); }
@@ -185,7 +185,7 @@
     var found = false, section = null;
     var hours = data.history_hours || 24;
     var SECTIONS = { "new": "// new in the last 3 hours", "day": "// last " + hours + " hours" };
-    var legend = ", most widely reported across countries first";
+    var legend = ", biggest first: reports weighted by spread across countries";
     (data.lines || []).forEach(function (l) {
       if (r && r.story === l.id) found = true;
       if (l.section && l.section !== section && SECTIONS[l.section]) {
