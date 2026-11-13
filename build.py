@@ -1485,6 +1485,10 @@ def render(state, now, cmap, built):
     lines, picks, shown_stories = [], {}, []
     room = {"new": NEW_LINES + SPARE_LINES, "day": DAY_LINES + SPARE_LINES}
     per_country, per_region = Counter(), Counter()
+    def skip(s, why):
+        if len(DIAG.setdefault("skipped", [])) < 40:
+            DIAG["skipped"].append({"why": why, "score": round(score(s)[0], 1), "n": len(s["d"]),
+                                    "where": event_country(s), "names": top_ents(s)[:3]})
     for sid in ranked:
         s = stories[sid]
         mem = members(s)
@@ -1492,19 +1496,19 @@ def render(state, now, cmap, built):
             continue
         section = "new" if s["first"] > now - NEW_AGE else "day"
         if score(s)[0] < (NEW_MIN_SCORE if section == "new" else DAY_MIN_SCORE):
-            continue                                  # too small to list
+            skip(s, "small"); continue  # too small to list
         if not worldwide_enough(s):
-            continue
+            skip(s, "not worldwide"); continue
         if s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]):
-            continue                                  # sport, by GDELT's topic tags
+            skip(s, "sport"); continue  # sport, by GDELT's topic tags
         if cmap and domestic(s) and len(s["f"]) < DOMESTIC_KEEP:
-            continue                                  # domestic news, unless the world's press carries it
+            skip(s, "domestic"); continue  # domestic news, unless the world's press carries it
         where = event_country(s)
         if where and per_country[where] >= PER_COUNTRY:
-            continue                                  # no single country fills the page
+            skip(s, "country cap"); continue  # no single country fills the page
         region = REGION_OF.get(where or "", "other")
         if region != "other" and per_region[region] >= PER_REGION:
-            continue                                  # nor a single world region
+            skip(s, "region cap"); continue  # nor a single world region
         if not room[section]:
             if not any(room.values()):
                 break
@@ -1516,9 +1520,9 @@ def render(state, now, cmap, built):
         parent = next((l for l, ps, pe in shown_stories if same_affair(s, ps, pe)), None)
         if parent is not None:
             parent["related"] += 1
-            continue
+            skip(s, "follow-up"); continue
         if any(hs is not s and len(hs["d"]) > len(s["d"]) and same_affair(s, hs, he) for hs, he in held):
-            continue
+            skip(s, "fragment of held"); continue
         key, text, tags, ckeys = consensus(s, now)
         if not key:
             continue
@@ -1565,6 +1569,8 @@ def render(state, now, cmap, built):
     lines.sort(key=lambda l: l["section"] != "new")               # new first; order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
     # Counted words are hard to read; a small story that got no sentence is left out.
+    DIAG.setdefault("skipped", []).extend({"why": "no clear sentence", "score": l["score"], "line": l["key"] + ": " + l["text"]}
+                                          for l in lines if not l["sentence"])
     lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
     cap = {"new": NEW_LINES, "day": DAY_LINES}
     kept = []
@@ -1719,7 +1725,7 @@ def main():
         "english_records": stats["rows"], "with_title": stats["titled"],
         "stories": len(sizes), "stories_5plus": sum(1 for x in sizes if x >= 5), "largest": sizes[:10],
         "stories_with_translated": sum(1 for st in state["stories"].values() if st["f"]),
-        "merged_this_run": DIAG["merged"], "ai": data["ai"], "rejected": DIAG["rejected"][-20:],
+        "merged_this_run": DIAG["merged"], "ai": data["ai"], "rejected": DIAG["rejected"][-20:], "skipped": DIAG.get("skipped", []),
         "lines": [{"section": l["section"], "score": l["score"], "outlets": l["outlets"], "wordings": l["wordings"],
                    "other_lang": l["other_lang"], "tags": l["tags"], "counted": l["key"] + ": " + l["text"],
                    "sentence": l["sentence"]} for l in data["lines"]],
