@@ -68,17 +68,18 @@ AI = os.environ.get("AI", "auto")                           # "auto": use it if 
 OLLAMA = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 AI_MODEL = os.environ.get("AI_MODEL", "")                   # empty: first installed of AI_PREFER
 AI_PREFER = ["qwen3:8b", "qwen3:14b", "gemma3:12b", "llama3.1:8b", "mistral:7b", "qwen3:1.7b", "qwen3:0.6b"]
-AI_WORDS = 10                                               # longest sentence accepted
+AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 20                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 21                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
-- State the one core fact most headlines agree on: who, what, where, how many.
+- State the one core fact most headlines agree on, so that a reader with no other news understands
+  it: who, what, where, and what it is about (for example "on Ukraine peace talks").
 - One clause only. No add-ons starting with "as", "after", "amid", "while" or "and".
 - Leave out background, reactions and consequences.
-- At most 10 words. Sentence case. Present tense. Write numbers as digits.
+- At most 12 words. Sentence case. Present tense. Write numbers as digits.
 - No opinion, no judgment words, no speculation, no quotation marks, no outlet names.
 - If headlines give different numbers for the same thing, write the range, like 4–5.
 - Output the sentence only."""
@@ -1010,8 +1011,8 @@ def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False
     keys = [k for _, k, _ in sent]
     if len(set(keys)) < 3:
         return "too little content"
-    if consensus_keys and len(set(keys) & set(consensus_keys)) < 2:
-        return "misses the shared words"
+    if consensus_keys and len(set(keys) & set(consensus_keys)) < max(2, math.ceil(0.5 * len(set(consensus_keys)))):
+        return "misses the shared words"            # it must carry what the story is about
     extra = [k for k in keys if support[stem(k)] < need]
     if extra:
         return "not in headlines: " + " ".join(extra[:4])
@@ -1206,8 +1207,11 @@ def add_sentences(state, lines, picks, started):
                     heads = shown
                     if n_try == 1 and top:            # second try: shorten the most printed headline
                         heads = [top]
-                        extra += ("\n- There is one headline. Shorten it to at most 10 words, keeping its "
+                        extra += ("\n- There is one headline. Shorten it to at most 12 words, keeping its "
                                   "own words and its attribution.")
+                    if why == "misses the shared words":
+                        extra += "\n- Your last answer left out what the story is about. Include these words: %s." \
+                            % ", ".join(sorted(ckeys))
                     if why in ("length", "extra clause"):
                         extra += "\n- Your last answer was too long. Use at most 8 words and a single clause."
                     if why.startswith(("not in headlines: ", "small word not in headlines: ", "number")) and ": " in why:

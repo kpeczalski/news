@@ -2,6 +2,10 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 14:40
+- Clearer lines: the model is asked for who, what, where and what it is about, in up to 12 words;
+  a sentence must carry at least half of the story's shared words, and a retry names them.
+
 ## 2026-11-13, 14:30
 - Website only from now on. Non-English outlets match a story on two shared main names, one of
   which belongs to the story (was: two uncommon names).
