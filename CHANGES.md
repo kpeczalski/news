@@ -233,3 +233,4 @@ After an independent grade of the live page (5 out of 10):
 - Crises ordered by human toll from the headlines (killed, then injured, median across headlines), then latest; not by coverage (user).
 - Review round (fairness, editor, design): tolls use the lower end of ranges; a toll most headlines attribute to a party ("military says") counts half in the crisis order; a named person resigning/dying/arrested/ousted is shown as fact only with 2+ papers of record, else marked a claim; "claims differ" -> "reports disagree".
 - Crisis lines say who did what: a headline without says/claims comes first; an event most headlines state as fact is not forced to carry attribution. (The Russia line was a Ukrainian strike in Russia; now "Ukrainian strikes kill 9 in Russia".)
+- Crises ordered latest first (not by toll or coverage); each conflict shows its most widely reported event of the day.

@@ -1894,22 +1894,19 @@ def render(state, now, cmap, built):
         crisis, total = sum(v[0] for v in d.values()), sum(v[1] for v in d.values())
         days_on = sum(1 for v in d.values() if v[0] >= 8)
         ongoing = min(1.0, days_on / ONGOING_DAYS) * min(1.0, 3 * crisis / max(1, total))
-        # Within a crisis, the event with the highest human toll; among equal tolls, the most covered.
+        # Within a crisis, its most widely reported event of the day (coverage only compares events of
+        # the same conflict here, never one conflict with another).
         def rank(item):
-            st = stories[item[1]]
-            return toll([t[0] for t in st["ti"].values()]) + (item[0],)
+            return countries(stories[item[1]]), item[0]
         best, sid, _ = max((it for it in items if it[0] >= 4), key=rank, default=(0, None, 0))
         if sid is None or (not worldwide_enough(stories[sid]) and days_on < 3):
             continue                                  # a local accident is not a world crisis
         if w not in CONFLICTS and countries(stories[sid]) < BIG_DISASTER_COUNTRIES:
             continue                                  # outside known wars, only what the world covers
-        k, h = toll([t[0] for t in stories[sid]["ti"].values()])
-        # A toll most headlines attribute to someone ("military says") is a party's claim: it counts half,
-        # so announcing the biggest number does not put a side on top.
-        if headline_share(stories[sid], SPEECH) >= 0.5:
-            k, h = k / 2, h / 2
-        crises.append(((k, h, stories[sid]["first"]), sid, w, days_on))
-    # Human toll first (people killed, then injured, as the headlines state it); then the latest.
+        latest = max(v[1] for v in members(stories[sid]).values())
+        crises.append((latest, sid, w, days_on))
+    # Latest first: when the event was last reported. Tolls are often one side's claims and press
+    # attention is uneven, so neither decides the order.
     crises.sort(reverse=True)
     added = 0
     for _, sid, where, days_on in crises:
