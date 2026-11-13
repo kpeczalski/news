@@ -655,12 +655,12 @@ class Writer(unittest.TestCase):
     def test_qualified_words_keep_their_qualifier(self):
         t = ["Chipco CEO resigns amid alleged affair with suspected spy", "Chipco CEO resigns over alleged affair",
              "CEO of Chipco resigns amid alleged affair, suspected spy named", "Chipco CEO resigns",
-             "Chipco CEO resigns after reports of affair", "Chipco CEO resigns after reports of an affair"]
+             "Chipco CEO resigns after reports of affair", "Chipco CEO resigns after reports of affair with spy"]
         c = lambda s: B.check_sentence(s, t, False)
         self.assertEqual(c("Chipco CEO resigns amid affair"), "dropped a qualifier: affair")
         self.assertEqual(c("Chipco CEO resigns amid alleged affair"), "")
         self.assertEqual(c("Chipco CEO resigns"), "")
-        self.assertEqual(c("Chipco CEO resigns after reports of affair"), "")
+        self.assertEqual(c("Chipco CEO resigns amid reports of affair"), "")
 
     def test_display_style(self):
         self.assertEqual(B.digits("U.S. envoys meet Putin as U.S. watches"), "US envoys meet Putin as US watches")
