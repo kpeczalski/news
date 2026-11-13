@@ -48,6 +48,8 @@ earthquake flood floods cyclone hurricane typhoon displaced humanitarian genocid
 CRISIS_SECTION = True
 ONGOING_LINES = 4                             # "ongoing": crises covered most over the last days
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
+# Countries of one conflict, counted as one crisis (one line, history added together).
+CONFLICT = {"IS": "IS-GZ", "GZ": "IS-GZ", "WE": "IS-GZ", "RS": "RS-UP", "UP": "RS-UP"}
 ONGOING_DAYS = 7
 ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
@@ -1620,8 +1622,10 @@ def render(state, now, cmap, built):
         return sum(1 for t in titles if set(raw_words(t)) & words) / max(1, len(titles))
 
     def is_crisis(s):
-        """War, attack or disaster, by the story's own headlines: these go to the crises section."""
-        return CRISIS_SECTION and headline_share(s, CRISIS_WORDS | VIOLENT_DEATH) >= 0.4
+        """War, attack or disaster, by the story's own headlines: these go to the crises section.
+        Speeches about a crisis ("... calls it genocide") are not events and stay in the main list."""
+        return CRISIS_SECTION and headline_share(s, CRISIS_WORDS | VIOLENT_DEATH) >= 0.4 \
+            and headline_share(s, {"calls", "urges", "accuses", "condemns", "slams", "warns", "vows"}) < 0.4
 
     def event_country(s):
         codes = [(c, e[2:]) for e, c in s["e"].items() if e.startswith("K:")]
@@ -1815,7 +1819,7 @@ def render(state, now, cmap, built):
         if not where or not is_crisis(s) or s["e"].get("T:sport", 0) >= 0.3 * s["n"] \
                 or s["e"].get("T:celeb", 0) >= 0.4 * s["n"] or len(members(s)) < MIN_OUTLETS:
             continue
-        crisis_today.setdefault(where, []).append((score(s)[0], sid, len(members(s))))
+        crisis_today.setdefault(CONFLICT.get(where, where), []).append((score(s)[0], sid, len(members(s))))
     keep = {time.strftime("%Y-%m-%d", time.gmtime((now - 96 * d) * SLOT)) for d in range(ONGOING_DAYS)}
     for where in list(tally):
         tally[where] = {d: v for d, v in tally[where].items() if d in keep and isinstance(v, list)}
@@ -1828,7 +1832,11 @@ def render(state, now, cmap, built):
     shown_ids = {l["id"] for l in lines}
     crises = []
     for w, items in crisis_today.items():
-        d = tally.get(w, {})
+        d = Counter()
+        for code, days in tally.items():
+            if CONFLICT.get(code, code) == w:
+                for day, v in days.items():
+                    d[day] = [d[day][0] + v[0], d[day][1] + v[1]] if day in d else list(v)
         crisis, total = sum(v[0] for v in d.values()), sum(v[1] for v in d.values())
         days_on = sum(1 for v in d.values() if v[0] >= 8)
         ongoing = min(1.0, days_on / ONGOING_DAYS) * min(1.0, 3 * crisis / max(1, total))
@@ -1869,6 +1877,11 @@ def render(state, now, cmap, built):
             per_country[where] += 1
             per_region[region] += 1
     lines = kept
+    # Within "most covered", the order the reader can check: most countries first (which stories make
+    # the page still uses the full score).
+    lines = [l for l in lines if l["section"] == "new"] + \
+        sorted([l for l in lines if l["section"] == "day"], key=lambda l: -l["countries"]) + \
+        [l for l in lines if l["section"] == "ongoing"]
     return {
         "v": 4,
         "ai": ai,

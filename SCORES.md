@@ -14,3 +14,4 @@ readability 10.
 
 | 2026-11-13 12:25Z | accuracy 6 | selection 5 | readability 6.5 | before dropping counted-word lines |
 | 2026-11-13 12:50Z | accuracy 5 | selection 5 | readability 6.5 | 7 lines; Nvidia allegation on the line |
+| 2026-11-13 15:35Z | accuracy 5 | selection 5 | readability 6 | two sections; crises thin, garbled model lines |
