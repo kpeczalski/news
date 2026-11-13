@@ -949,7 +949,8 @@ def write_sentence(model, headlines, extra=""):
         "model": model, "stream": False, "think": False,
         "options": {"temperature": 0, "num_predict": 60},
         "messages": [{"role": "system", "content": AI_PROMPT + extra},
-                     {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)}],
+                     {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)
+                      + "\n/no_think"}],                      # qwen3: answer directly, no reasoning text
     })
     text = (out.get("message") or {}).get("content", "")
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.S).strip()
