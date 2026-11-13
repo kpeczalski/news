@@ -1377,7 +1377,7 @@ def digits(text):
 
 
 def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=None, must_negate=False,
-                    persons=()):
+                    persons=(), event=False):
     """Fallback when no model sentence passes: a real headline that is short and plain and passes
     the same word, number and negation checks as a model sentence. A renowned outlet's headline
     comes first (renowned maps title -> rank); otherwise the one printed by the most outlets."""
@@ -1432,7 +1432,10 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             rw = set(raw_words(text))
             accuses = bool(set(persons) & rw and rw & WRONGDOING)   # a named person tied to wrongdoing
             amid = bool(re.search(r"\bamid\b", text, re.I))   # background added to the event
-            ranked.append(((not accuses, not amid, enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
+            # A crisis line says who did what ("Ukrainian drone strike kills 4 in Volgograd"), not who
+            # says it: a headline without "says/claims" comes first when one passes.
+            plain = not (event and rw & SPEECH)
+            ranked.append(((not accuses, plain, not amid, enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
@@ -1482,7 +1485,10 @@ def add_sentences(state, lines, picks, started):
         negate0 = bool({"not", "never", "no"} & set((l["key"] + " " + l["text"]).split()))
         # Pick, don't write: a real headline that passes every check is used as printed, and the
         # model is asked only when none does (a small model invents words; a headline cannot).
-        picked = common_headline(titles, ckeys, claim, renowned, l["text"], negate0, persons)
+        event = l["section"] == "ongoing"
+        if event and claim and sum(1 for t in titles if not set(raw_words(t)) & HEDGE) >= 0.5 * len(titles):
+            claim = False                             # most headlines state the event as fact
+        picked = common_headline(titles, ckeys, claim, renowned, l["text"], negate0, persons, event)
         if picked and not name_ok and set(raw_words(picked)) & set(persons):
             picked = ""                               # a small story names no person
         if picked and disputed and not set(raw_words(picked)) & DENIAL:
