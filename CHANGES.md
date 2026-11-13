@@ -208,3 +208,4 @@ After an independent grade of the live page (5 out of 10):
 
 ## 2026-11-13, 15:10 (Helsinki)
 - Bigger model: gpt-oss-120b (Llama 3.3 was not offered) on Groq's free tier writes the sentence when no headline fits (key in the LLM_API_KEY secret). Falls back to the local qwen3:1.7b after 3 failed calls, or when the key is missing.
+- Celebrity stories skipped by GDELT topic tags (actors, singers, celebrities), like sport.

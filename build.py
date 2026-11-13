@@ -426,6 +426,7 @@ def latest_slot(name):
 
 
 SPORT_THEME = re.compile(r"SPORT|ATHLET|_PLAYER|FOOTBALL|SOCCER|CRICKET|OLYMPIC", re.I)
+CELEB_THEME = re.compile(r"TAX_FNCACT_(ACTRESS|ACTOR|SINGER|CELEBRIT|MUSICIAN|RAPPER|COMEDIAN|POPSTAR)|ENTERTAINMENT", re.I)
 
 
 def alias(name):
@@ -436,6 +437,8 @@ def entities(f):
     ents = set()
     if SPORT_THEME.search(f[7] or "") or SPORT_THEME.search(f[8] or ""):
         ents.add("T:sport")                           # GDELT's own topic tags mark it as sport
+    if CELEB_THEME.search(f[7] or "") or CELEB_THEME.search(f[8] or ""):
+        ents.add("T:celeb")                           # ... or about actors, singers, celebrities
     for p in f[11].split(";")[:15]:
         if p.strip():
             ents.add("P:" + alias(p.strip().lower()))
@@ -1569,6 +1572,8 @@ def render(state, now, cmap, built):
             skip(s, "small"); continue  # too small to list
         if not worldwide_enough(s):
             skip(s, "not worldwide"); continue
+        if s["e"].get("T:celeb", 0) >= 0.4 * max(1, s["n"]):
+            skip(s, "celebrity"); continue
         if s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]):
             skip(s, "sport"); continue  # sport, by GDELT's topic tags
         if cmap and domestic(s) and len(s["f"]) < DOMESTIC_KEEP:
