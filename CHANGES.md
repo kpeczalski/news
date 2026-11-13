@@ -209,3 +209,6 @@ After an independent grade of the live page (5 out of 10):
 ## 2026-11-13, 15:10 (Helsinki)
 - Bigger model: gpt-oss-120b (Llama 3.3 was not offered) on Groq's free tier writes the sentence when no headline fits (key in the LLM_API_KEY secret). Falls back to the local qwen3:1.7b after 3 failed calls, or when the key is missing.
 - Celebrity stories skipped by GDELT topic tags (actors, singers, celebrities), like sport.
+
+## 2026-11-13, 15:40 (Helsinki)
+- Learning loop: every sentence the big model writes that passes all checks (and every accepted headline) is kept as an example (last 300, in state). When the small fallback model writes, it is shown the 3 most similar examples first. examples.jsonl is published as a training set for a later fine-tune.

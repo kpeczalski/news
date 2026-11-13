@@ -1016,6 +1016,7 @@ def write_sentence(model, headlines, extra=""):
                     payload.update({"reasoning_format": "hidden", "reasoning_effort": "none", "max_tokens": 600})
                 out = api("/chat/completions", timeout=30, payload=payload)
                 text = ((out.get("choices") or [{}])[0].get("message") or {}).get("content", "")
+                API_STATE["answered_by"] = "api"
                 return clean_reply(text)
             except Exception as e:
                 API_STATE["failed"] += 1                  # rate limit or outage: the local model takes over
@@ -1023,13 +1024,42 @@ def write_sentence(model, headlines, extra=""):
         model = API_STATE["local"]
         if not model:
             return ""
+    API_STATE["answered_by"] = "local"
+    # Learning from the bigger model: its accepted sentences for the most similar past stories
+    # are shown to the small model as worked examples (no training run needed).
+    shots = []
+    for ex in similar_examples(headlines, 3):
+        shots += [{"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in ex["h"])},
+                  {"role": "assistant", "content": ex["s"]}]
     out = ollama("/api/chat", timeout=40, payload={
         "model": model, "stream": False, "think": False,
         "options": {"temperature": 0, "num_predict": 60},
-        "messages": [{"role": "system", "content": AI_PROMPT + extra},
-                     {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)}],
+        "messages": [{"role": "system", "content": AI_PROMPT + extra}] + shots +
+                    [{"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)}],
     })
     return clean_reply((out.get("message") or {}).get("content", ""))
+
+
+EXAMPLES = []                                  # accepted (headlines -> sentence) pairs, kept in state["ex"]
+EXAMPLES_MAX = 300
+
+
+def similar_examples(headlines, k):
+    want = {w for h in headlines for w, _ in tokenise(h)}
+    scored = []
+    for ex in EXAMPLES:
+        have = {w for h in ex["h"] for w, _ in tokenise(h)}
+        scored.append((len(want & have) / (1 + len(have)), ex))
+    scored.sort(key=lambda x: -x[0])
+    return [ex for sc, ex in scored[:k] if sc > 0] or [ex for _, ex in scored[:k]]
+
+
+def remember_example(headlines, sentence, by):
+    """Keep a sentence that passed every check, written by the bigger model or printed as a headline."""
+    if not sentence or any(ex["s"] == sentence for ex in EXAMPLES):
+        return
+    EXAMPLES.append({"h": list(headlines[:6]), "s": sentence, "by": by})
+    del EXAMPLES[:-EXAMPLES_MAX]
 
 
 def clean_reply(text):
@@ -1291,6 +1321,7 @@ def supported_words(titles, limit=24):
 def add_sentences(state, lines, picks, started):
     """Attach a checked model sentence to each line. Cached per story until its counted line changes."""
     model = pick_model()
+    EXAMPLES[:] = state.setdefault("ex", [])
     cache = state.setdefault("ai", {})
     live = {l["id"] for l in lines}
     for sid in [k for k in cache if k not in live and k not in state["stories"]]:
@@ -1312,6 +1343,7 @@ def add_sentences(state, lines, picks, started):
         if True:
             if picked:
                 l["sentence"], l["by"] = picked, "headline"
+                remember_example(shown, picked, "headline")
                 cache.pop(l["id"], None)
                 if set(raw_words(picked)) & HEDGE and "claim" not in l["tags"]:
                     l["tags"].insert(0, "claim")
@@ -1375,6 +1407,8 @@ def add_sentences(state, lines, picks, started):
                 DIAG["rejected"].append({"why": why, "sentence": sentence, "line": l["key"] + ": " + l["text"]})
                 sentence = ""
             cache[l["id"]] = {"sig": sig, "s": sentence}
+            if sentence and API_STATE.get("answered_by") == "api":
+                remember_example(shown, sentence, "big model")
             l["sentence"] = sentence
         else:
             l["sentence"] = ""
@@ -1394,7 +1428,8 @@ def add_sentences(state, lines, picks, started):
         if l["sentence"] and "claim" in l["tags"] and not hedged_in_line:
             l["sentence"] = "Reports: " + l["sentence"]
         l["show_tags"] = [t for t in l["tags"] if not (t == "claim" and l["sentence"])]
-    return {"model": model or "", "sentences": used}
+    state["ex"] = list(EXAMPLES)
+    return {"model": model or "", "sentences": used, "examples": len(EXAMPLES)}
 
 
 def render(state, now, cmap, built):
@@ -1801,6 +1836,10 @@ def main():
         json.dump(state, f, ensure_ascii=False, separators=(",", ":"))
     replace(os.path.join(OUT, "state.json.gz.tmp"), os.path.join(OUT, "state.json.gz"))
     sizes = sorted((len(st["d"]) for st in state["stories"].values()), reverse=True)
+    # The examples, as a training set for fine-tuning the small model later.
+    with open(os.path.join(OUT, "examples.jsonl"), "w", encoding="utf-8") as f:
+        for ex in state.get("ex", []):
+            f.write(json.dumps(ex, ensure_ascii=False) + "\n")
     write_json(os.path.join(OUT, "diag.json"), {
         "built": data["updated"], "seconds": round(time.time() - started, 1),
         "last": iso(state["last"]), "last_translated": iso(state["last_tr"]),

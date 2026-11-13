@@ -813,7 +813,7 @@ class Writer(unittest.TestCase):
         self.assertEqual(p1["lines"][0]["sentence"], "Earthquake in Lima leaves 3 dead")
         self.assertEqual(p2["lines"][0]["sentence"], "Earthquake in Lima leaves 3 dead")
         self.assertEqual(len(calls), 1)                                # second render used the cache
-        self.assertEqual(p1["ai"], {"model": "stub", "sentences": 1})
+        self.assertEqual((p1["ai"]["model"], p1["ai"]["sentences"]), ("stub", 1))
 
     def test_bad_sentence_falls_back_to_counted_line(self):
         p1, p2, calls = self._run("Earthquake in Lima leaves 300 dead, city destroyed")
@@ -920,7 +920,7 @@ class Writer(unittest.TestCase):
 
     def test_writer_off_by_default_in_tests(self):
         _, p = run([(100, [art("%s.com" % c, "Dam bursts near Riverton town %s" % c) for c in "abcde"], [])])
-        self.assertEqual(p["ai"], {"model": "", "sentences": 0})
+        self.assertEqual((p["ai"]["model"], p["ai"]["sentences"]), ("", 0))
 
 
 class EndToEnd(unittest.TestCase):
@@ -1060,6 +1060,17 @@ class HeadlinePick(unittest.TestCase):
         self.assertTrue(got)
         self.assertNotIn("Resigns", got)
         self.assertLessEqual(len(got), B.ONE_LINE)
+
+
+class Learning(unittest.TestCase):
+    def test_small_model_gets_similar_accepted_examples(self):
+        B.EXAMPLES[:] = [{"h": ["Quake hits Lima, 3 dead"], "s": "Earthquake in Lima kills 3", "by": "big model"},
+                         {"h": ["EU leaders meet in Dublin"], "s": "EU leaders meet in Dublin", "by": "headline"}]
+        got = B.similar_examples(["Strong quake shakes Lima"], 1)
+        self.assertEqual(got[0]["s"], "Earthquake in Lima kills 3")
+        B.remember_example(["x"], "Earthquake in Lima kills 3", "big model")      # no duplicates
+        self.assertEqual(len(B.EXAMPLES), 2)
+        B.EXAMPLES[:] = []
 
 
 if __name__ == "__main__":
