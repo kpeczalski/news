@@ -23,3 +23,4 @@
 \b(drummer|guitarist|singer|rapper|actors?|actress|band|pop star|rock star|movie|film|tv series|sitcom|comedian|concert|tour dates|box set|fashion week)\b
 # A question is not a report.
 \?\s*$
+\b(sandpaper\w*|ball-tampering|wickets?|innings|batsm[ae]n|bowlers?|cricketers?)\b

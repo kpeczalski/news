@@ -70,7 +70,7 @@ AI_PREFER = ["qwen3:8b", "qwen3:14b", "gemma3:12b", "llama3.1:8b", "mistral:7b",
 AI_WORDS = 10                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 18                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 19                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -1077,7 +1077,10 @@ def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False
             return "dropped a qualifier: " + w
 
     if claim:
-        # The source must be named up front (or at the very end) the way headlines name it.
+        # A qualifier kept in place ("suspected spy", "alleged affair") marks the claim where it is.
+        if any(w in QUALIFIER and i + 1 < len(raw) for i, w in enumerate(raw)):
+            return ""
+        # Otherwise the source must be named up front (or at the very end) the way headlines name it.
         at = [i for i, w in enumerate(raw) if w in HEDGE or w == "according"]
         if not at:
             return "dropped the attribution"
@@ -1191,12 +1194,18 @@ def add_sentences(state, lines, picks, started):
                          "headline does, using the word \"%s\" (for example: Police say ...)." % word for h in hints]
             sentence, why = "", ""
             try:
-                for extra in hints:
+                top = Counter(titles).most_common(1)[0][0] if titles else ""
+                for n_try, extra in enumerate(hints):
+                    heads = shown
+                    if n_try == 1 and top:            # second try: shorten the most printed headline
+                        heads = [top]
+                        extra += ("\n- There is one headline. Shorten it to at most 10 words, keeping its "
+                                  "own words and its attribution.")
                     if why in ("length", "extra clause"):
                         extra += "\n- Your last answer was too long. Use at most 8 words and a single clause."
                     if why.startswith(("not in headlines: ", "small word not in headlines: ", "number")) and ": " in why:
                         extra += "\n- Do not use: %s." % why.split(": ", 1)[1].replace(" ", ", ")
-                    sentence = write_sentence(model, shown, extra)
+                    sentence = write_sentence(model, heads, extra)
                     why = check_sentence(sentence, titles, must_negate, ckeys, claim, l["text"])
                     cut = re.search(CLAUSE, sentence)
                     if why and cut:                    # the core before an add-on may pass by itself

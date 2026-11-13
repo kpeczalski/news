@@ -20,42 +20,41 @@
     <h2>How a line is made</h2>
     <ul>
       <li>Every 15 minutes the program reads the newest file from the <a href="https://www.gdeltproject.org/" rel="noopener">GDELT Project</a>, which monitors news outlets worldwide.</li>
-      <li>Headlines that share enough distinctive words, or two or more uncommon names, are grouped as one story. Dates, weekdays and years are ignored.</li>
-      <li>The line is the words found in at least 35% of a story's headlines, in their usual order. Words like "not", "no" and "never" are kept. Attention-seeking words ("shocking", "slams", "bombshell") are never used.</li>
-      <li>Numbers come from headlines of the last 3 hours. If outlets give different numbers, the line shows the range, for example "8–9 dead".</li>
-      <li>A person is named only once at least 10 differently worded reports carry the story.</li>
+      <li>Headlines that share enough distinctive words, or two or more uncommon names, are grouped as one story. Dates and years are ignored.</li>
+      <li>The counted words are the words found in at least 35% of a story's headlines, in their usual order. "Not", "no" and "never" are kept. Attention-seeking words ("shocking", "slams", "bombshell", "emotional") are never used.</li>
+      <li>Numbers come from headlines of the last 3 hours. If outlets give different numbers, the range is shown, for example "8–9 dead".</li>
+      <li>A person is named only once at least 10 differently worded reports, or 30 outlets, carry the story.</li>
       <li>Each outlet counts once per story. When an outlet updates its headline, the new one replaces the old.</li>
     </ul>
 
     <h2>Who writes the sentence</h2>
     <ul>
-      <li>A small open-source language model (qwen3, run by the program itself; nothing is sent to an AI company) turns each story's headlines into one sentence of at most 10 words stating one fact.</li>
-      <li>The model only rewords. It does not pick stories, rank them or set the labels.</li>
-      <li>Every sentence is checked by fixed rules before it is shown. Each word and number must appear in at least two differently worded headlines of that story. A number must be one the counted words state, and must stay with its own word ("8 dead" cannot become "8 injured"). No add-on clauses. A claim must name its source up front, the way the headlines do. Two words may not appear in an order no headline uses. A shared "not" must be kept and none may be added. Attribution such as "police say" must be kept when most headlines carry it. Attention-seeking words are refused.</li>
+      <li>A small open-source language model (qwen3), run by the program itself, turns a story's headlines into one sentence of at most 10 words stating one fact. Nothing is sent to an AI company.</li>
+      <li>The model only rewords. It does not pick stories, rank them or set labels. It gets three tries: write a sentence; shorten the most printed headline; write again using only words the headlines share.</li>
+      <li>Every sentence is checked by fixed rules before it is shown:
+        <ul>
+          <li>each word and number appears in at least two differently worded headlines of that story;</li>
+          <li>each number is one the counted words state, and stays with its own word ("8 dead" cannot become "8 injured");</li>
+          <li>names keep the order the headlines give them (who did what to whom);</li>
+          <li>a shared "not" is kept and none is added;</li>
+          <li>a qualified word keeps its qualifier ("alleged affair", "suspected spy");</li>
+          <li>a claim keeps its source ("police say") or its qualifier;</li>
+          <li>one fact, no add-on clause, no attention-seeking words.</li>
+        </ul></li>
       <li>Stories where outlets disagree never get a model sentence.</li>
-      <li>A word the headlines qualify ("alleged affair", "suspected spy") may only appear with its qualifier.</li>
-      <li>A sentence that fails the check is thrown away. The line then shows a real headline, from a renowned outlet first, otherwise the one the most outlets printed, provided it is short and plain and passes the same word and number checks; otherwise the counted words. Any wording that hedges ("alleged", "suspected") gets the claim label. Numbers are shown as digits. Open a line to see the counted words and the real headlines behind it.</li>
-      <li>Without a model the page still works and shows counted words only.</li>
+      <li>If no sentence passes, the line shows a real headline that passes the same checks, from a renowned outlet first; if none passes either, the counted words. Without the model the page still works the same way.</li>
     </ul>
 
     <h2>How lines are ordered</h2>
     <ul>
-      <li>Two sections that do not overlap. "New in the last 3 hours" holds stories whose first report is under 3 hours old and that already have substantial coverage (up to 5); when there is none, the section is not shown. The second section's title states how many hours the program has actually been collecting, up to 24. It holds the biggest stories that began earlier (up to 7); the "+N this hour" figure shows which of them are still moving.</li>
-      <li>By the number of differently worded reports in the last 24 hours. Word-for-word reprints of one agency story count one tenth each, so 200 reprints weigh as much as 20 independent reports.</li>
-      <li>World weighting: a story carried almost entirely by one country's outlets keeps a quarter of its weight; full weight needs coverage shared evenly across about four countries or more. Outlets in other languages count 0.5 each.</li>
-      <li>One line per event: a follow-up or reaction that carries two of the event's three main names is counted under that line.</li>
-      <li>Commentary, explainers, sport and entertainment are ignored.</li>
-      <li>Domestic news: when over 60% of a story's outlets (or of its differently worded reports) are in the country where it happened, it is listed only if at least 50 outlets in other languages carry it.</li>
-      <li>A remark ("X says…") that no outlet in another language picked up is not listed.</li>
-      <li>Order is by world coverage, so a story with fewer outlets can stand above one with more.</li>
-      <li>International floor: a story is listed only if its coverage is spread over about 2.5 countries' worth of outlets, or at least 3 outlets in other languages carry it.</li>
-      <li>At most 2 lines about events in any one country.</li>
-      <li>Country shares are counted per differently worded report, so one agency text reprinted by many papers in one country is one vote.</li>
-      <li>A story that no outlet in another language carries keeps 0.6 of its weight.</li>
-      <li>Affairs of state (governments, elections, war, strikes, talks, sanctions, tariffs) weigh 1.5 times as much. The word list is in the program under STATE_WORDS.</li>
-      <li>A word-for-word reprint counts 0.3 instead of 0.1 once a story is carried in 3 or more countries, so agency stories are not undercounted.</li>
-      <li>A story also needs a minimum weight to be listed, so on a quiet day the list is short, not padded.</li>
-      <li>A story needs at least 5 outlets to appear. The list is the same for every reader.</li>
+      <li>Two sections that never overlap. <strong>New in the last 3 hours</strong>: stories first reported under 3 hours ago that already have real coverage (up to 5; hidden when there are none). <strong>Last N hours</strong>: the biggest stories that began earlier (up to 7). N counts up to 24 as the program collects.</li>
+      <li>Order is by world coverage, not by outlet count, so a story with fewer outlets can stand above one with more.</li>
+      <li>World coverage = differently worded reports, plus reprints of the same agency text (0.1 each, or 0.3 once the story is in 3 or more countries), plus outlets in other languages (0.5 each).</li>
+      <li>That is scaled by how evenly coverage is spread between countries (full weight at about 4 countries' worth), with each differently worded report counting as one vote.</li>
+      <li>Affairs of state (governments, elections, war, strikes, talks, sanctions, tariffs) count 1.5 times; a story no outlet in another language carries counts 0.6 times.</li>
+      <li>Not listed: domestic news (over 60% of outlets or reports from the country where it happened) unless 50 outlets in other languages carry it; remarks ("X says…") nobody abroad picked up; stories without an international footprint; stories below a minimum weight; commentary, explainers, questions, sport and entertainment.</li>
+      <li>One line per event: follow-ups and reactions that share the event's main names and distinctive words are counted under it.</li>
+      <li>At most 2 lines about events in any one country. Every reader sees the same list.</li>
     </ul>
 
     <h2>What the labels mean</h2>

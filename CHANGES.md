@@ -2,6 +2,11 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 13:25
+- Model gets a second try that shortens the most printed headline; a qualifier kept in place
+  ("suspected spy") counts as attribution; wider cricket filter.
+- "How this works" rewritten to match the current rules.
+
 ## 2026-11-13, 13:15
 - Website live at kpeczalski.github.io/news (GitHub, small model qwen3:1.7b).
 - Fragments of one big event fold into one line even when its names are everywhere

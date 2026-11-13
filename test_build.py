@@ -680,6 +680,9 @@ class Writer(unittest.TestCase):
         self.assertEqual(c("Iran says tankers caught fire in Strait of Hormuz"), "")
         self.assertEqual(c("Tankers caught fire in Strait of Hormuz, Iran says"), "")
         self.assertEqual(c("Tankers caught fire in Strait of Hormuz"), "dropped the attribution")
+        q = ["Former Chipco CEO linked to suspected spy", "Chipco CEO linked to suspected spy, sources say",
+             "Former Chipco CEO's affair with suspected spy"]
+        self.assertEqual(B.check_sentence("Former Chipco CEO linked to suspected spy", q, False, (), True), "")
         self.assertEqual(c("Tankers says Iran caught fire in Strait of Hormuz")[:11], "attribution")   # source not as in headlines
         self.assertEqual(B.common_headline(["Tankers on fire in Strait of Hormuz"] * 5 + [t[0]] * 2, {"tanker", "hormuz", "strait"}, True),
                          "Iran says two tankers caught fire in Strait of Hormuz")
