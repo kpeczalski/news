@@ -2,6 +2,11 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 15:00
+- Words that only repeat shared names (e.g. "nvidia") no longer link two stories; the biggest
+  stories can use a widely printed headline again (support capped at 6 wordings).
+- Sport also recognised by GDELT's own topic tags, not only by headline words.
+
 ## 2026-11-13, 14:50
 - A real headline printed word for word by a third of the outlets is used whole (it is what
   most outlets say), giving lines their context. Retries ask for context instead of fewer words.

@@ -471,6 +471,17 @@ class Stories(unittest.TestCase):
         left = [(s["n"], sorted(s["d"])) for s in st["stories"].values()]
         self.assertEqual(left, [(5, ["n0.com", "n1.com", "n2.com", "n3.com", "s0.com"])])
 
+    def test_sport_by_topic_tag(self):
+        def mk(i, title, theme):
+            f = [""] * 27
+            f[7] = theme
+            return {"domain": "s%d.com" % i, "url": "https://x/%d" % i, "title": title, "slug": False,
+                    "ents": B.entities(f), "toks": B.tokenise(title)}
+        feud = [mk(i, "Warner fires back at Cummins after nonsense claims %d" % i, "TAX_FNCACT_PLAYER;GENERAL") for i in range(5)]
+        news = [mk(10 + i, "Earthquake strikes Lima, 3 dead, report %d" % i, "NATURAL_DISASTER") for i in range(5)]
+        _, p = run([(100, feud + news, [])])
+        self.assertEqual([l["key"] for l in p["lines"]], ["earthquake"])
+
     def test_commentary_headlines_are_ignored(self):
         _, pat = B.load_rules()
         for title in ["Black voters view Senate win through lens of state's racial legacy", "What to know about the tariffs",

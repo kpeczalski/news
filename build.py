@@ -399,8 +399,13 @@ def latest_slot(name):
     return calendar.timegm(time.strptime(m.group(1), "%Y%m%d%H%M%S")) // SLOT
 
 
+SPORT_THEME = re.compile(r"SPORT|ATHLET|_PLAYER|FOOTBALL|SOCCER|CRICKET|OLYMPIC", re.I)
+
+
 def entities(f):
     ents = set()
+    if SPORT_THEME.search(f[7] or "") or SPORT_THEME.search(f[8] or ""):
+        ents.add("T:sport")                           # GDELT's own topic tags mark it as sport
     for p in f[11].split(";")[:15]:
         if p.strip():
             ents.add("P:" + p.strip().lower())
@@ -1143,7 +1148,7 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     # Every word of a real headline must be common in the story: in two differently worded headlines,
     # and in at least 15% of them in a big story, so one outlet's colour ("scandal", "worldwide") is dropped.
     n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
-    support = 1 if n_wordings < 6 else max(2, math.ceil(0.15 * n_wordings))
+    support = 1 if n_wordings < 6 else min(6, max(2, math.ceil(0.15 * n_wordings)))
     printed = Counter(titles)
     for _, title in sorted(ranked, reverse=True):
         plain = title.rstrip(".")
@@ -1367,12 +1372,13 @@ def render(state, now, cmap, built):
         # A word is distinctive here when at least a fifth of all its uses are in these two stories.
         rare_words = {k for k in set(top_tokens(small)[:8]) & set(top_tokens(big)[:8])
                       if not is_num(k) and state["df"].get(k, 0) <= 5 * (small["t"].get(k, 0) + big["t"].get(k, 0))}
-        if len(rare_words) >= 2:
+        # Words that only repeat the shared names ("nvidia", "gaza") prove nothing about the event.
+        name_words = {k for e in set(top_ents(small)) | big_names for p in e[2:].split() for k, _ in tokenise(p)}
+        event_words = rare_words - name_words
+        if len(event_words) >= 2:
             return True
-        # Or two shared names plus one distinctive word that is not itself part of those names
-        # ("Microsoft" + "Exchange Online" + "outage"; but "Gaza" + "Rafah" + "gaza" is not enough).
-        name_words = {k for e in shared for p in e[2:].split() for k, _ in tokenise(p)}
-        return len(shared) >= 2 and bool(rare_words - name_words)
+        # Or two shared names plus one such word ("Microsoft" + "Exchange Online" + "outage").
+        return len(shared) >= 2 and bool(event_words)
 
     def same_event(a, b):
         ta, tb = set(top_tokens(a)), set(top_tokens(b))
@@ -1434,6 +1440,8 @@ def render(state, now, cmap, built):
             continue                                  # too small to list
         if not worldwide_enough(s):
             continue
+        if s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]):
+            continue                                  # sport, by GDELT's topic tags
         if cmap and domestic(s) and len(s["f"]) < DOMESTIC_KEEP:
             continue                                  # domestic news, unless the world's press carries it
         where = event_country(s)
