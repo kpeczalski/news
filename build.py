@@ -958,7 +958,7 @@ def ollama(path, payload=None, timeout=60):
 
 API_KEY = os.environ.get("LLM_API_KEY", "")                # a free hosted model (Groq); local model if unset or down
 API_URL = os.environ.get("LLM_API_URL", "https://api.groq.com/openai/v1")
-API_MODEL = os.environ.get("LLM_API_MODEL", "llama-3.3-70b-versatile")
+API_MODELS = os.environ.get("LLM_API_MODEL", "openai/gpt-oss-120b qwen/qwen3.8-27b llama-3.3-70b-versatile").split()
 API_STATE = {"local": None, "failed": 0}
 
 
@@ -978,9 +978,10 @@ def pick_model():
     if API_KEY:
         try:
             ids = [m.get("id", "") for m in api("/models", timeout=10).get("data", [])]
-            if API_MODEL in ids:
-                return "api:" + API_MODEL
-            log("hosted model not offered:", API_MODEL, "available:", ", ".join(sorted(ids))[:400])
+            for want in API_MODELS:
+                if want in ids:
+                    return "api:" + want
+            log("no hosted model offered of", API_MODELS, "available:", ", ".join(sorted(ids))[:400])
         except Exception as e:
             log("hosted model unavailable:", repr(e)[:200])
     return API_STATE["local"]
@@ -1003,10 +1004,14 @@ def write_sentence(model, headlines, extra=""):
     if model and model.startswith("api:"):
         if API_STATE["failed"] < 3:
             try:
-                out = api("/chat/completions", timeout=30, payload={
-                    "model": model[4:], "temperature": 0, "max_tokens": 60,
-                    "messages": [{"role": "system", "content": AI_PROMPT + extra},
-                                 {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)}]})
+                payload = {"model": model[4:], "temperature": 0, "max_tokens": 60,
+                           "messages": [{"role": "system", "content": AI_PROMPT + extra},
+                                        {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)}]}
+                if "gpt-oss" in model:                    # a reasoning model: think briefly, show only the answer
+                    payload.update({"reasoning_effort": "low", "include_reasoning": False, "max_tokens": 600})
+                elif "qwen3" in model:
+                    payload.update({"reasoning_format": "hidden", "reasoning_effort": "none", "max_tokens": 600})
+                out = api("/chat/completions", timeout=30, payload=payload)
                 text = ((out.get("choices") or [{}])[0].get("message") or {}).get("content", "")
                 return clean_reply(text)
             except Exception as e:
