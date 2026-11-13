@@ -191,3 +191,12 @@ After an independent grade of the live page (5 out of 10):
 - A story with no clear sentence or headline is now left off; spare candidates fill its place. Up to 9 day lines.
 - Every line shows its hourly rate (+0 included); legend says how lines are ranked.
 - Sport/flash filter: "fires back", "nonsense", cricket terms (a cricket spat slipped in as a spare).
+
+## 2026-11-13, 15:10 (Helsinki)
+- Why the page was thin: the biggest story (Nvidia) and two Iran stories had good headlines that were refused (Title Case, single print, "disputed" tag), and they used up the country cap before being dropped.
+- Title Case headlines are put in sentence case using the story's own lower-case words; "reports" counts as attribution.
+- In a big story a headline printed once may be used, since every word is checked against many headlines.
+- A disputed story may show a headline that carries the denial; a small story may show a headline that names no person.
+- Country and region caps count only lines actually shown.
+- Lines that fit on one line (80 characters) are preferred; the page window is wider (880 px).
+- "quietly", "bluntly" refused. diag.json lists why candidates were left off.

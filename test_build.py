@@ -788,7 +788,10 @@ class Writer(unittest.TestCase):
         self.assertEqual([k for k, _ in B.tokenise("SHOCKING: Minister slams bombshell budget")], ["minister", "budget"])
 
     def _run(self, reply, n=12):
+        # These tests are about the model's path, so no printed headline is picked first.
         saved = (B.AI, B.pick_model, B.write_sentence, B.MIN_OUTLETS, B.NAME_MIN)
+        saved_ch, B.common_headline = B.common_headline, (lambda *a, **k: "")
+        self.addCleanup(setattr, B, "common_headline", saved_ch)
         calls = []
         B.AI, B.MIN_OUTLETS, B.NAME_MIN = "auto", 3, 3
         B.pick_model = lambda: "stub"
@@ -819,6 +822,8 @@ class Writer(unittest.TestCase):
 
     def test_retry_names_the_refused_words(self):
         saved = (B.AI, B.pick_model, B.write_sentence, B.MIN_OUTLETS, B.NAME_MIN)
+        saved_ch, B.common_headline = B.common_headline, (lambda *a, **k: "")
+        self.addCleanup(setattr, B, "common_headline", saved_ch)
         extras = []
         def fake(model, heads, extra=""):
             extras.append(extra)
@@ -849,6 +854,8 @@ class Writer(unittest.TestCase):
 
     def test_accepted_sentence_is_kept_while_it_still_passes(self):
         saved = (B.AI, B.pick_model, B.write_sentence, B.MIN_OUTLETS, B.NAME_MIN)
+        saved_ch, B.common_headline = B.common_headline, (lambda *a, **k: "")
+        self.addCleanup(setattr, B, "common_headline", saved_ch)
         replies = ["Earthquake in Lima leaves 3 dead", "Earthquake in Lima leaves 3 dead, president blamed for delays"]
         calls = []
         B.AI, B.MIN_OUTLETS, B.NAME_MIN, B.pick_model = "auto", 3, 3, (lambda: "stub")
@@ -1041,6 +1048,17 @@ class EndToEnd(unittest.TestCase):
         B.main()
         self.assertEqual(self.data()["lines"][0]["countries"], 1)
         self.assertTrue(os.path.exists(os.path.join(self.out, "countries.json.gz")))
+
+
+class HeadlinePick(unittest.TestCase):
+    def test_title_case_headline_is_put_in_sentence_case_and_cut(self):
+        tc = "Nvidia CEO Jensen Huang Resigns After Reports of Affairs, Including One With Suspected Spy"
+        titles = [tc] * 3 + ["Nvidia CEO Jensen Huang resigns after reports of affairs"[:0] + "Jensen Huang resigns as Nvidia CEO after reports"] * 2 + \
+                 ["Nvidia's Jensen Huang resigns after reports of affairs"] * 2
+        got = B.common_headline(titles, {"nvidia", "ceo", "jensen", "huang", "resign"})
+        self.assertTrue(got)
+        self.assertNotIn("Resigns", got)
+        self.assertLessEqual(len(got), B.ONE_LINE)
 
 
 if __name__ == "__main__":

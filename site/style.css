@@ -43,7 +43,7 @@ body {
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 .window {
-  max-width: 780px; margin: 0 auto;
+  max-width: 880px; margin: 0 auto;
   background: var(--window);
   border: 1px solid var(--rule); border-radius: 10px; overflow: hidden;
 }

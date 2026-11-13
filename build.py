@@ -78,6 +78,7 @@ DAY_LINES = int(os.environ.get("DAY_LINES", "9"))            # lines in "last 24
 NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs this much coverage to be listed
 DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "8"))  # so does an older one: a short list beats a padded one
 COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "1e9"))  # a line left as counted words: never shown
+ONE_LINE = 80                                 # characters that fit on one line of the page
 SPARE_LINES = 3                               # extra candidates, in case some get no clear sentence
 MIN_OUTLETS = int(os.environ.get("MIN_OUTLETS", "5"))       # outlets needed to appear at all
 NAME_MIN = int(os.environ.get("NAME_MIN", "10"))            # wordings needed before a person is named
@@ -155,7 +156,7 @@ rips ripped destroys destroyed epic insane unbelievable incredible amazing horri
 devastating heartbreaking tragic chaos fury furious outrage outraged meltdown nightmare jaw-dropping
 exclusive urgent revealed finally massive huge emotional beloved dramatic iconic heartfelt historic
 stunned furious bizarre chilling brutal savage
-scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense""".split())   # verdicts, not facts
+scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense quietly bluntly""".split())   # verdicts, not facts
 
 NUMWORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7",
             "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12", "thirteen": "13",
@@ -1161,19 +1162,30 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     comes first (renowned maps title -> rank); otherwise the one printed by the most outlets."""
     renowned = renowned or {}
     ranked = []
+    # Words other headlines print in lower case; used to put a Title Case headline in sentence case.
+    lower_seen = {w for t in titles for w in re.findall(r"[a-z][a-z'-]+", t) if not w[:1].isupper()}
+    small = {"a", "an", "the", "of", "in", "on", "at", "to", "for", "by", "with", "from", "over", "into"}
+    n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
     for title, n in Counter(titles).items():
-        if n < 2 and title not in renowned:
-            continue
+        if n < 2 and title not in renowned and n_wordings < 6:
+            continue                                  # in a big story every word is checked against many
+        words0 = title.split()
+        if len(words0) >= 4 and not any(len(w) > 3 and w.islower() for w in words0):
+            title_sc = " ".join(w if i == 0 or not w[:1].isupper() or w[1:2].isupper()
+                                or w.lower().strip(".,'\"") not in lower_seen | small else w.lower()
+                                for i, w in enumerate(words0))
+        else:
+            title_sc = title
         # The headline itself, and its opening up to the first add-on ("... as 3 million expected").
-        cut = re.search(CLAUSE, title)
-        if cut and set(raw_words(title[cut.end():])) & (HEDGE | {"according"}):
+        cut = re.search(CLAUSE, title_sc)
+        if cut and set(raw_words(title_sc[cut.end():])) & (HEDGE | {"according"}):
             cut = None                                # never cut off an attribution
-        for text in {title, title[:cut.start()].strip() if cut else title}:
+        for text in {title_sc, title_sc[:cut.start()].strip() if cut else title_sc}:
             words = text.split()
             alpha = [w for w in words if w[:1].isalpha()]
             if not 4 <= len(words) <= AI_WORDS + 2 or re.search(r"[?!:;|]", text):
                 continue
-            if claim and not set(raw_words(text)) & (HEDGE | {"according"}):
+            if claim and not set(raw_words(text)) & (HEDGE | {"according", "reports", "report"}):
                 continue                              # a claim is only shown with its attribution
             if len(alpha) >= 4 and not any(len(w) > 3 and w.islower() for w in alpha):
                 continue                              # Title Case Reads As Shouting (no plain word left)
@@ -1183,12 +1195,12 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             # Carrying at least half of the story's shared words is enough; then shorter is better,
             # which trims agency add-ons ("..., related events in Shenzhen").
             enough = len(named) >= max(2, math.ceil(0.5 * len(set(consensus_keys))))
-            ranked.append(((enough, -renowned.get(title, 999), n, -len(words)), text, title))
+            fits = len(text) <= ONE_LINE                 # fits on one line of the page
+            ranked.append(((enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
     # and in at least 15% of them in a big story, so one outlet's colour ("scandal", "worldwide") is dropped.
-    n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
     support = 1 if n_wordings < 6 else min(6, max(2, math.ceil(0.15 * n_wordings)))
     printed = Counter(titles)
     for _, text, source in sorted(ranked, reverse=True):
@@ -1233,8 +1245,12 @@ def add_sentences(state, lines, picks, started):
         negate0 = bool({"not", "never", "no"} & set((l["key"] + " " + l["text"]).split()))
         # Pick, don't write: a real headline that passes every check is used as printed, and the
         # model is asked only when none does (a small model invents words; a headline cannot).
-        if name_ok and not disputed:
-            picked = common_headline(titles, ckeys, claim, renowned, l["text"], negate0, persons)
+        picked = common_headline(titles, ckeys, claim, renowned, l["text"], negate0, persons)
+        if picked and not name_ok and set(raw_words(picked)) & set(persons):
+            picked = ""                               # a small story names no person
+        if picked and disputed and not set(raw_words(picked)) & DENIAL:
+            picked = ""                               # a disputed story is shown with its denial
+        if True:
             if picked:
                 l["sentence"], l["by"] = picked, "headline"
                 cache.pop(l["id"], None)
@@ -1504,10 +1520,10 @@ def render(state, now, cmap, built):
         if cmap and domestic(s) and len(s["f"]) < DOMESTIC_KEEP:
             skip(s, "domestic"); continue  # domestic news, unless the world's press carries it
         where = event_country(s)
-        if where and per_country[where] >= PER_COUNTRY:
+        if where and per_country[where] >= PER_COUNTRY + 1:
             skip(s, "country cap"); continue  # no single country fills the page
         region = REGION_OF.get(where or "", "other")
-        if region != "other" and per_region[region] >= PER_REGION:
+        if region != "other" and per_region[region] >= PER_REGION + 2:
             skip(s, "region cap"); continue  # nor a single world region
         if not room[section]:
             if not any(room.values()):
@@ -1559,7 +1575,7 @@ def render(state, now, cmap, built):
             "prev_hour": sum(1 for v in firsts if now - 8 < v <= now - 4),
             "spark": [sum(1 for v in firsts if v == now - 11 + i) for i in range(12)],
             "first": iso(s["first"]),
-            "headlines": heads, "links": links,
+            "headlines": heads, "links": links, "_where": where,
         })
         shown_stories.append((lines[-1], s, set(top_ents(s)[:3])))    # the event's three main names
         room[section] -= 1
@@ -1573,11 +1589,18 @@ def render(state, now, cmap, built):
                                           for l in lines if not l["sentence"])
     lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
     cap = {"new": NEW_LINES, "day": DAY_LINES}
-    kept = []
-    for l in lines:                                               # spares fill only gaps
-        if cap[l["section"]]:
-            cap[l["section"]] -= 1
-            kept.append(l)
+    kept, per_country, per_region = [], Counter(), Counter()
+    for l in lines:                         # spares fill only gaps; caps count lines actually shown
+        where = l.pop("_where", None)
+        region = REGION_OF.get(where or "", "other")
+        if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
+                or (region != "other" and per_region[region] >= PER_REGION):
+            continue
+        cap[l["section"]] -= 1
+        kept.append(l)
+        if where:
+            per_country[where] += 1
+            per_region[region] += 1
     lines = kept
     return {
         "v": 4,
