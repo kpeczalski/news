@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="What most news outlets report right now, in the words they share. Built by counting, not written by anyone.">
 <title>news</title>
-<link rel="stylesheet" href="style.css?v=7">
+<link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 <!--page-->
@@ -86,6 +86,7 @@
       s.appendChild(el("span", "k", l.key));
       s.appendChild(document.createTextNode(": " + l.text));
     }
+    if (l.context) s.appendChild(el("span", "ctx", l.context));
     var m = el("span", "m");
     m.appendChild(document.createTextNode((l.countries || 1) + (l.countries === 1 ? " country" : " countries") + " · "));
     var nh = l.new_hour || 0;          // pace: quiet, steady, rising, surging

@@ -234,3 +234,4 @@ After an independent grade of the live page (5 out of 10):
 - Review round (fairness, editor, design): tolls use the lower end of ranges; a toll most headlines attribute to a party ("military says") counts half in the crisis order; a named person resigning/dying/arrested/ousted is shown as fact only with 2+ papers of record, else marked a claim; "claims differ" -> "reports disagree".
 - Crisis lines say who did what: a headline without says/claims comes first; an event most headlines state as fact is not forced to carry attribution. (The Russia line was a Ukrainian strike in Russia; now "Ukrainian strikes kill 9 in Russia".)
 - Crises ordered latest first (not by toll or coverage); each conflict shows its most widely reported event of the day.
+- Context line under crisis lines of long wars: one dated documented fact on how the war began (Russia–Ukraine: full-scale invasion 24 Feb 2022; Israel–Gaza: Hamas-led attack 7 Oct 2023 and Israel campaign in Gaza).

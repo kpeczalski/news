@@ -58,6 +58,13 @@ CONFLICTS = {
     "Haiti gang war": "HA", "Colombia conflict": "CO",
 }
 CONFLICT = {c: name for name, codes in CONFLICTS.items() for c in codes.split()}
+# One dated, widely documented fact per conflict, shown under its crisis line so a single event is read
+# in context (who began the war), without judging any event. Edit only with a source.
+CONTEXT = {
+    "Russia–Ukraine war": "Russia began its full-scale invasion of Ukraine on 24 February 2022.",
+    "Israel and the Palestinian territories": "The war began with the Hamas-led attack on Israel on 7 October 2023, "
+                                             "followed by Israel's military campaign in Gaza.",
+}
 BIG_DISASTER_COUNTRIES = 20                   # outside known wars: a disaster or attack the world covers
 BIG_EVENT = set("resigns resign resigned dies died arrested ousted sacked quits assassinated impeached".split())
 ONGOING_DAYS = 7
@@ -1918,6 +1925,8 @@ def render(state, now, cmap, built):
         line = make_line(sid, s, members(s), "ongoing", where)
         if line:
             line["covered_days"] = days_on
+            if where in CONTEXT:
+                line["context"] = CONTEXT[where]
             line["toll"] = list(toll([t[0] for t in s["ti"].values()]))
             lines.append(line)
             added += 1
