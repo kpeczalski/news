@@ -1241,7 +1241,8 @@ def add_sentences(state, lines, picks, started):
             l["sentence"] = digits(l["sentence"])
         # Attribution is handled one way: the line itself says who is speaking, or opens with
         # "Reports:". The side label is kept only for lines shown as counted words.
-        if l["sentence"] and "claim" in l["tags"] and not set(raw_words(l["sentence"])) & SPEECH:
+        hedged_in_line = set(raw_words(l["sentence"] or "")) & (SPEECH | QUALIFIER | {"allegation", "allegations"})
+        if l["sentence"] and "claim" in l["tags"] and not hedged_in_line:
             l["sentence"] = "Reports: " + l["sentence"]
         l["show_tags"] = [t for t in l["tags"] if not (t == "claim" and l["sentence"])]
     return {"model": model or "", "sentences": used}

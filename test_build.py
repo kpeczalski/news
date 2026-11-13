@@ -847,6 +847,22 @@ class Writer(unittest.TestCase):
         self.assertEqual(B.check_sentence("FDA warns of GLP-1 drugs risk", t + ["Risk warning for GLP-1 drugs from FDA"], False), "")
         self.assertEqual((B.stem("warning"), B.stem("warned"), B.stem("press"), B.stem("gas")), ("warn", "warn", "press", "gas"))
 
+    def test_no_reports_prefix_when_the_line_hedges_itself(self):
+        saved = (B.AI, B.pick_model, B.write_sentence, B.MIN_OUTLETS, B.NAME_MIN)
+        B.AI, B.MIN_OUTLETS, B.NAME_MIN, B.pick_model = "auto", 3, 3, (lambda: "stub")
+        B.write_sentence = lambda model, heads, extra="": "Chipco CEO resigns amid alleged affair"
+        try:
+            titles = ["Chipco CEO resigns over alleged affair", "Chipco CEO resigns amid alleged affair, sources say",
+                      "Alleged affair: Chipco CEO resigns", "Chipco CEO resigns after alleged affair, board says"]
+            st = B.new_state()
+            B.cluster_slot(st, [art("o%d.com" % i, t) for i, t in enumerate(titles)], 100)
+            st["last"] = 100
+            l = B.render(st, 100, {}, 0)["lines"][0]
+        finally:
+            B.AI, B.pick_model, B.write_sentence, B.MIN_OUTLETS, B.NAME_MIN = saved
+        self.assertIn("claim", l["tags"])
+        self.assertEqual(l["sentence"], "Chipco CEO resigns amid alleged affair")
+
     def test_writer_off_by_default_in_tests(self):
         _, p = run([(100, [art("%s.com" % c, "Dam bursts near Riverton town %s" % c) for c in "abcde"], [])])
         self.assertEqual(p["ai"], {"model": "", "sentences": 0})
