@@ -1073,5 +1073,14 @@ class Learning(unittest.TestCase):
         B.EXAMPLES[:] = []
 
 
+class Wires(unittest.TestCase):
+    def test_agency_copy_is_recognised_from_the_address(self):
+        self.assertEqual(B.wire_of("https://www.wral.com/news/ap/6d74c-van-hollen/")[0], "AP")
+        self.assertEqual(B.wire_of("https://lufkindailynews.com/news_reuters/business/x/article.html")[0], "Reuters")
+        self.assertIsNone(B.wire_of("https://cointelegraph.com/news/huang-affair-reuters"))   # about a report, not the copy
+        self.assertIsNone(B.wire_of("https://example.com/news/apple-shares"))
+        self.assertLess(B.source_rank("wral.com", "https://www.wral.com/news/ap/x/"), B.pref_rank("dw.com"))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -127,6 +127,26 @@ def pref_rank(domain):
     return 999
 
 
+WIRES = {"reuters": ("Reuters", "reuters.com"), "ap": ("AP", "apnews.com"), "afp": ("AFP", "afp.com")}
+
+
+def wire_of(url):
+    """News-agency copy reprinted on another site, from a folder in its address
+    (".../ap/business/...", ".../news_reuters/...", ".../ultime-notizie-reuters/...")."""
+    folders = (url.split("//", 1)[-1].split("?")[0].split("/")[1:-1])
+    for f in folders:
+        for part in re.split(r"[_-]", f.lower()):
+            if part in WIRES:
+                return WIRES[part]
+    return None
+
+
+def source_rank(domain, url):
+    """Preferred-list rank of the outlet, or of the agency whose copy it reprints."""
+    w = wire_of(url)
+    return min(pref_rank(domain), pref_rank(w[1])) if w else pref_rank(domain)
+
+
 # Dropped from lines and matching: grammar and newsroom filler. Negations and modal verbs
 # (not, no, never, may, could, might) are deliberately NOT here: they change the meaning.
 STOP = set("""a an the and or but if then than so of in on at by for from to into onto with within
@@ -937,14 +957,15 @@ def sources(s, consensus_keys):
     rows, seen_wording = [], set()
     for dom, (title, url, _, slug) in s["ti"].items():
         keys = tuple(k for k, _ in tokenise(title))
-        rows.append((pref_rank(dom), -OUTLET_SIZE.get(dom, 0), -(len(consensus_keys & set(keys))),
+        rows.append((source_rank(dom, url), -(len(consensus_keys & set(keys))), -OUTLET_SIZE.get(dom, 0),
                      dom, title, url, slug, keys))
     rows.sort()
     heads, links = [], []
     for _, _, _, dom, title, url, slug, keys in rows:
         if len(heads) < HEADLINES and not slug and keys not in seen_wording:
             seen_wording.add(keys)
-            heads.append({"t": title, "d": dom, "u": url})
+            w = wire_of(url)
+            heads.append({"t": title, "d": (w[0] + " via " + dom) if w else dom, "u": url})
         elif len(links) < 8:
             links.append({"d": dom, "u": url})
     return heads, links
@@ -1642,7 +1663,7 @@ def render(state, now, cmap, built):
         all_titles = [t[0] for t in s["ti"].values() if not t[3]]
         renowned = {}
         for dom, t in s["ti"].items():
-            r = pref_rank(dom)
+            r = source_rank(dom, t[1])
             if r < 999 and not t[3]:
                 renowned[t[0]] = min(r, renowned.get(t[0], 999))
         shown, seen_w = [], set()
