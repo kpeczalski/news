@@ -187,10 +187,7 @@
     code.textContent = "";
     var found = false, section = null;
     var hours = data.history_hours || 24;
-    var od = data.ongoing_days || 1;
-    var SECTIONS = { "new": "// new in the last 3 hours", "day": "// most covered, last " + hours + " hours",
-                     "ongoing": "// crises: wars, attacks and disasters, one line per country" +
-                                (od > 1 ? " (weighted by " + od + " days of coverage)" : "") };
+    var SECTIONS = { "new": "// new", "day": "// most covered", "ongoing": "// crises" };
     var legend = "";
     (data.lines || []).forEach(function (l) {
       if (r && r.story === l.id) found = true;
