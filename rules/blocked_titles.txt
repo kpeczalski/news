@@ -26,3 +26,4 @@
 \b(sandpaper\w*|ball-tampering|wickets?|innings|batsm[ae]n|bowlers?|cricketers?)\b
 \b(fires|hits|lashes|snaps|claps) back\b
 \b(ashes|test match|odi|t20|ipl|sheffield shield|baggy green)\b
+\b(memorabilia|sells? (for .{1,20} )?at auction|fetches .{1,20} at auction|star wars|darth vader|lightsaber)\b
