@@ -89,7 +89,7 @@ BUDGET = int(os.environ.get("BUDGET_SECONDS", "420"))       # stop taking new sl
 NEW_LINES = int(os.environ.get("NEW_LINES", "5"))            # lines in "new in the last 3 hours"
 DAY_LINES = int(os.environ.get("DAY_LINES", "9"))            # lines in "last 24 hours"
 NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs this much coverage to be listed
-DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "8"))  # so does an older one: a short list beats a padded one
+DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "12"))  # so does an older one: a short list beats a padded one
 COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "1e9"))  # a line left as counted words: never shown
 ONE_LINE = 80                                 # characters that fit on one line of the page
 SPARE_LINES = 3                               # extra candidates, in case some get no clear sentence
@@ -109,7 +109,7 @@ AI_TRIES = int(os.environ.get("AI_TRIES", "4"))             # attempts per story
 AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 26                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 27                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -117,6 +117,9 @@ Rules:
   it: who, what, where, and what it is about (for example "on Ukraine peace talks").
 - One clause only. No add-ons starting with "as", "after", "amid", "while" or "and".
 - Leave out background, reactions and consequences.
+- Write it as subject, verb, object: who did what to whom, in that order, with the right small
+  words ("strike on a hospital", not "strike to a hospital"). No "-ing" add-ons such as
+  "drawing", "prompting", "sparking", "raising".
 - At most 12 words. Sentence case. Present tense. Write numbers as digits.
 - No opinion, no judgment words, no speculation, no quotation marks, no outlet names.
 - If headlines give different numbers for the same thing, write the range, like 4–5.
@@ -1172,7 +1175,7 @@ def stem(k):
     return k
 
 
-CLAUSE = r",\s+|\s(?:as|after|amid|while|and|but|following|if|unless|because|despite|until)\s"
+CLAUSE = r",\s+|\s(?:as|after|amid|while|and|but|following|if|unless|because|despite|until|drawing|prompting|sparking|raising|triggering|leaving|fuelling|fueling)\s"
 
 
 def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False, counted=None,

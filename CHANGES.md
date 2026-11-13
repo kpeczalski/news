@@ -226,3 +226,5 @@ After an independent grade of the live page (5 out of 10):
 - New "ongoing crises" section: crisis coverage added up per country over 7 days (or 4+ separate stories today), largest crises not on the page get one line.
 - Two sections (user): "most covered" and "crises" (wars, attacks, disasters by headline words; one line per country; raised by up to 2x for crises covered most days of the week). One-week history backfilled from GDELT, a few past files per run. Individual deaths ("dies") are not crises and do not get the life weight.
 - Review fixes: crises section takes events only (not speeches), one line per conflict (Israel/Gaza/West Bank together, Russia/Ukraine together); "most covered" shown in order of countries; "disputed" label now "claims differ"; section labels simplified.
+- Model prompt: subject-verb-object, right prepositions, no "-ing" add-ons; "drawing/prompting/sparking..." now cut as add-ons. Rules version 27 (all model lines rewritten).
+- Most covered needs score 12 (was 8): drops niche business filler.
