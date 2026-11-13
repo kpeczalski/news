@@ -237,3 +237,4 @@ After an independent grade of the live page (5 out of 10):
 - Context line under crisis lines of long wars: one dated documented fact on how the war began (Russia–Ukraine: full-scale invasion 24 Feb 2022; Israel–Gaza: Hamas-led attack 7 Oct 2023 and Israel campaign in Gaza).
 - Context line removed for Israel and the Palestinian territories (a longer conflict; any single start date frames it). Kept only where the start is undisputed (Russia–Ukraine).
 - No background lines: crisis lines show only the day's headline (user: just facts).
+- Fix: "TRANSPORT" no longer matches the sport tag (it hid a Russian attack on Ukraine as sport). "attack(s)" count as crisis words again. A crisis falls back to its next event when the first gets no clear line; one line per conflict.

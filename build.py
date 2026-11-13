@@ -42,7 +42,7 @@ NO_OTHER_LANG = 0.6                           # a story no outlet in another lan
 DOMESTIC_KEEP = 50                            # domestic news is listed only if this many outlets in other languages carry it
 LIFE_WEIGHT = 0.5                             # a story whose reports mostly tell of deaths counts up to 1.5 times
 DEATH_WORDS = set("killed kills kill dead dies died death deaths wounded injured injures casualties massacre".split())
-CRISIS_WORDS = set("""war airstrike airstrikes bombing shelling missile missiles drone
+CRISIS_WORDS = set("""war attack attacks attacked barrage airstrike airstrikes bombing shelling missile missiles drone
 drones troops military ceasefire hostages hostage refugees famine siege offensive invasion militants fighting
 earthquake flood floods cyclone hurricane typhoon displaced humanitarian genocide gunmen""".split())
 CRISIS_SECTION = True
@@ -478,7 +478,7 @@ def latest_slot(name):
     return calendar.timegm(time.strptime(m.group(1), "%Y%m%d%H%M%S")) // SLOT
 
 
-SPORT_THEME = re.compile(r"SPORT|ATHLET|_PLAYER|FOOTBALL|SOCCER|CRICKET|OLYMPIC", re.I)
+SPORT_THEME = re.compile(r"(?<![A-Z])SPORT|ATHLET|_PLAYER|FOOTBALL|SOCCER|CRICKET|OLYMPIC")   # not TRANSPORT
 CRISIS_THEME = re.compile(r"ARMEDCONFLICT|MILITARY|TERROR|KILL|REFUGEE|HUMANITARIAN|FAMINE|NATURAL_DISASTER|"
                           r"CEASEFIRE|DISPLACED|EPIDEMIC|GENOCIDE|AIRSTRIKE|SIEGE", re.I)
 CELEB_THEME = re.compile(r"TAX_FNCACT_(ACTRESS|ACTOR|SINGER|CELEBRIT|MUSICIAN|RAPPER|COMEDIAN|POPSTAR)|ENTERTAINMENT", re.I)
@@ -1874,8 +1874,7 @@ def render(state, now, cmap, built):
     crisis_today = {}
     for sid, s in stories.items():
         where = event_country(s)
-        if not where or not is_crisis(s) or s["e"].get("T:sport", 0) >= 0.3 * s["n"] \
-                or s["e"].get("T:celeb", 0) >= 0.4 * s["n"] or len(members(s)) < MIN_OUTLETS:
+        if not where or not is_crisis(s) or len(members(s)) < MIN_OUTLETS:
             continue
         crisis_today.setdefault(CONFLICT.get(where, where), []).append((score(s)[0], sid, len(members(s))))
     keep = {time.strftime("%Y-%m-%d", time.gmtime((now - 96 * d) * SLOT)) for d in range(ONGOING_DAYS)}
@@ -1902,31 +1901,31 @@ def render(state, now, cmap, built):
         # the same conflict here, never one conflict with another).
         def rank(item):
             return countries(stories[item[1]]), item[0]
-        best, sid, _ = max((it for it in items if it[0] >= 4), key=rank, default=(0, None, 0))
+        ranked_items = sorted((it for it in items if it[0] >= 4), key=rank, reverse=True)
+        best, sid, _ = ranked_items[0] if ranked_items else (0, None, 0)
+        backups = [it[1] for it in ranked_items[1:3]]
         if sid is None or (not worldwide_enough(stories[sid]) and days_on < 3):
             continue                                  # a local accident is not a world crisis
         if w not in CONFLICTS and countries(stories[sid]) < BIG_DISASTER_COUNTRIES:
             continue                                  # outside known wars, only what the world covers
         latest = max(v[1] for v in members(stories[sid]).values())
-        crises.append((latest, sid, w, days_on))
+        crises.append((latest, sid, w, days_on, backups))
     # Latest first: when the event was last reported. Tolls are often one side's claims and press
     # attention is uneven, so neither decides the order.
     crises.sort(reverse=True)
     added = 0
-    for _, sid, where, days_on in crises:
+    for _, sid, where, days_on, backups in crises:
         if added >= ONGOING_LINES + SPARE_LINES:
             break
-        if sid in shown_ids:
-            continue
-        s = stories[sid]
-        line = make_line(sid, s, members(s), "ongoing", where)
-        if line:
-            line["covered_days"] = days_on
-            if where in CONTEXT:
-                line["context"] = CONTEXT[where]
-            line["toll"] = list(toll([t[0] for t in s["ti"].values()]))
-            lines.append(line)
-            added += 1
+        for cand in [sid] + backups:              # the next event stands in if one gets no clear line
+            if cand in shown_ids:
+                continue
+            s = stories[cand]
+            line = make_line(cand, s, members(s), "ongoing", where)
+            if line:
+                line["covered_days"] = days_on
+                lines.append(line)
+                added += 1
     lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2}[l["section"]])   # order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
     # Counted words are hard to read; a small story that got no sentence is left out.
@@ -1934,15 +1933,19 @@ def render(state, now, cmap, built):
                                           for l in lines if not l["sentence"])
     lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
     cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES}
-    kept, per_country, per_region = [], Counter(), Counter()
+    kept, per_country, per_region, shown_crises = [], Counter(), Counter(), set()
     for l in lines:                         # spares fill only gaps; caps count lines actually shown
         where = l.pop("_where", None)
         region = REGION_OF.get(where or "", "other")
+        if l["section"] == "ongoing" and where in shown_crises:
+            continue                                  # one line per conflict
         if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
                 or (region != "other" and per_region[region] >= PER_REGION):
             continue
         cap[l["section"]] -= 1
         kept.append(l)
+        if l["section"] == "ongoing":
+            shown_crises.add(where)
         if where:
             per_country[where] += 1
             per_region[region] += 1

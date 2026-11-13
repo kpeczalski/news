@@ -1099,5 +1099,11 @@ class Toll(unittest.TestCase):
         self.assertEqual(B.toll(["Quake leaves 1,200 dead", "Quake kills 1,200"]), (1200, 0))
 
 
+class SportTag(unittest.TestCase):
+    def test_transport_is_not_sport(self):
+        self.assertFalse(B.SPORT_THEME.search("TAX_FNCACT_MILITARY;WB_135_TRANSPORT;KILL"))
+        self.assertTrue(B.SPORT_THEME.search("SPORTS;TAX_SPORTS_FOOTBALL"))
+
+
 if __name__ == "__main__":
     unittest.main()
