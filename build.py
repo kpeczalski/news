@@ -59,6 +59,7 @@ CONFLICTS = {
 }
 CONFLICT = {c: name for name, codes in CONFLICTS.items() for c in codes.split()}
 BIG_DISASTER_COUNTRIES = 20                   # outside known wars: a disaster or attack the world covers
+BIG_EVENT = set("resigns resign resigned dies died arrested ousted sacked quits assassinated impeached".split())
 ONGOING_DAYS = 7
 ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
@@ -1352,12 +1353,15 @@ def toll(titles):
     for t in titles:
         d = h = 0
         for m in TOLL_RE.finditer(digits(t)):
-            n = int((m.group(1) or m.group(4)).replace(",", ""))
+            n = int((m.group(1) or m.group(4)).replace(",", ""))   # group 1 is the lower end of a range
             word = (m.group(2) or m.group(3)).lower()
             if word.startswith(("injur", "wound", "hurt")):
                 h = max(h, n)
             else:
                 d = max(d, n)
+        lows = [int(x.replace(",", "")) for x in re.findall(r"\b(\d[\d,]*)\s*[-–]\s*\d", digits(t))]
+        if d and lows:
+            d = min(d, min(lows))                      # "43–74 dead": the lower end
         if d:
             dead.append(d)
         if h:
@@ -1782,6 +1786,12 @@ def render(state, now, cmap, built):
         need_p = max(2, math.ceil(0.2 * s["n"]))
         persons = {k for e, c in s["e"].items() if e.startswith("P:") and c >= need_p
                    for part in e[2:].split() for k, _ in tokenise(part)}
+        # A named person who resigns, dies, is arrested or ousted: shown as fact only when two papers of
+        # record carry it; otherwise the line is marked a claim ("Reports: ...").
+        if persons and set(raw_words(key + " " + text)) & BIG_EVENT and \
+                len({d for d in s["ti"] if source_rank(d, s["ti"][d][1]) < pref_rank("reuters.com")}) < 2 \
+                and "claim" not in tags:
+            tags.insert(0, "claim")
         picks[sid] = (all_titles, shown, names_ok(s, now) or not has_person(s), ckeys, renowned, persons)
         firsts = [v[0] for v in mem.values()]
         line = {
@@ -1888,6 +1898,10 @@ def render(state, now, cmap, built):
         if w not in CONFLICTS and countries(stories[sid]) < BIG_DISASTER_COUNTRIES:
             continue                                  # outside known wars, only what the world covers
         k, h = toll([t[0] for t in stories[sid]["ti"].values()])
+        # A toll most headlines attribute to someone ("military says") is a party's claim: it counts half,
+        # so announcing the biggest number does not put a side on top.
+        if headline_share(stories[sid], SPEECH) >= 0.5:
+            k, h = k / 2, h / 2
         crises.append(((k, h, stories[sid]["first"]), sid, w, days_on))
     # Human toll first (people killed, then injured, as the headlines state it); then the latest.
     crises.sort(reverse=True)
