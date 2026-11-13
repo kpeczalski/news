@@ -217,3 +217,4 @@ After an independent grade of the live page (5 out of 10):
 - Readability: headlines in a plain reading font (the window, numbers and notes stay monospace); line labels simplified to "N countries" plus "rising"; counted words no longer shown when a line is opened.
 - Sources: agency copy (AP, Reuters, AFP) reprinted on other sites is recognised from the address and listed first as "AP via wral.com". Reuters, AP and AFP own sites are not in the GDELT feed.
 - Sources order (user request): newspapers of record first (NYT, Guardian, FT, WSJ, Washington Post, Economist, Le Monde, El Pais, Spiegel, Bloomberg, SCMP, The Hindu, Japan Times, Straits Times, HS), then agencies and their reprinted copy, then public broadcasters.
+- Sources: renowned papers from the country where it happened come first (no home advantage where the press is state-controlled); 30 papers of record by country added.

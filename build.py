@@ -116,7 +116,7 @@ DISPUTE_SHARE = 0.20
 # fallback headline. Not a ranking input. Overridden by rules/preferred_sources.txt.
 PREFERRED = ["nytimes.com", "theguardian.com", "ft.com", "wsj.com", "washingtonpost.com", "economist.com",
              "lemonde.fr", "elpais.com", "spiegel.de", "bloomberg.com", "scmp.com", "thehindu.com",
-             "japantimes.co.jp", "straitstimes.com", "hs.fi", "reuters.com", "apnews.com", "afp.com",
+             "japantimes.co.jp", "straitstimes.com", "hs.fi", "irishtimes.com", "rte.ie", "nos.nl", "dutchnews.nl", "nzz.ch", "corriere.it", "lefigaro.fr", "faz.net", "sueddeutsche.de", "lanacion.com.ar", "elcomercio.pe", "folha.uol.com.br", "eluniversal.com.mx", "theglobeandmail.com", "smh.com.au", "dawn.com", "haaretz.com", "timesofisrael.com", "nation.africa", "dailymaverick.co.za", "premiumtimesng.com", "kyivindependent.com", "themoscowtimes.com", "koreaherald.com", "yna.co.kr", "asahi.com", "mainichi.jp", "bangkokpost.com", "thejakartapost.com", "rappler.com", "reuters.com", "apnews.com", "afp.com",
              "wire.reprint", "bbc.com", "bbc.co.uk", "dw.com", "france24.com", "npr.org", "pbs.org", "yle.fi",
              "cbc.ca", "abc.net.au", "nhk.or.jp", "swissinfo.ch", "euronews.com", "aljazeera.com", "rfi.fr",
              "kyodonews.net"]
@@ -954,17 +954,30 @@ def consensus(s, now):
 OUTLET_SIZE = {}                       # domain -> articles seen by GDELT 2015-2021; filled at run time
 
 
-def sources(s, consensus_keys):
-    """(headlines, links): renowned outlets first in list order, then the largest outlets, then
-    the headlines closest to the shared wording."""
+# Countries whose press is largely state-controlled: their outlets get no home advantage.
+STATE_PRESS = set("CH RS IR KN SA BM VM CU ER TX BO SY AE QA LA EG".split())
+LOCAL_BIG = 0.75                              # a local outlet counts as major in the top quarter by size
+
+
+def sources(s, consensus_keys, local=None, cmap=None):
+    """(headlines, links). Renowned outlets from the country where it happened come first (they
+    know it best), then the renowned list in order, then major local outlets, then the largest
+    outlets; within each, the headlines closest to the shared wording."""
+    if local in STATE_PRESS or not cmap:
+        local = None
+    sizes = sorted(OUTLET_SIZE.values())
+    big = sizes[int(LOCAL_BIG * (len(sizes) - 1))] if sizes else 0
     rows, seen_wording = [], set()
     for dom, (title, url, _, slug) in s["ti"].items():
         keys = tuple(k for k, _ in tokenise(title))
-        rows.append((source_rank(dom, url), -(len(consensus_keys & set(keys))), -OUTLET_SIZE.get(dom, 0),
+        pr = source_rank(dom, url)
+        home = bool(local) and country_of(dom, cmap) == local
+        tier = 0 if pr < 999 and home else 1 if pr < 999 else 2 if home and OUTLET_SIZE.get(dom, 0) >= big else 3
+        rows.append((tier, pr, -(len(consensus_keys & set(keys))), -OUTLET_SIZE.get(dom, 0),
                      dom, title, url, slug, keys))
     rows.sort()
     heads, links = [], []
-    for _, _, _, dom, title, url, slug, keys in rows:
+    for _, _, _, _, dom, title, url, slug, keys in rows:
         if len(heads) < HEADLINES and not slug and keys not in seen_wording:
             seen_wording.add(keys)
             w = wire_of(url)
@@ -1662,7 +1675,7 @@ def render(state, now, cmap, built):
             continue
         if cmap and "claim" in tags and not s["f"]:
             continue                                  # a remark nobody abroad picked up is not an event
-        heads, links = sources(s, ckeys)
+        heads, links = sources(s, ckeys, where, cmap)
         all_titles = [t[0] for t in s["ti"].values() if not t[3]]
         renowned = {}
         for dom, t in s["ti"].items():

@@ -19,6 +19,37 @@ thehindu.com
 japantimes.co.jp
 straitstimes.com
 hs.fi
+# papers of record by country: listed after the above, but first for news from their own country
+irishtimes.com
+rte.ie
+nos.nl
+dutchnews.nl
+nzz.ch
+corriere.it
+lefigaro.fr
+faz.net
+sueddeutsche.de
+lanacion.com.ar
+elcomercio.pe
+folha.uol.com.br
+eluniversal.com.mx
+theglobeandmail.com
+smh.com.au
+dawn.com
+haaretz.com
+timesofisrael.com
+nation.africa
+dailymaverick.co.za
+premiumtimesng.com
+kyivindependent.com
+themoscowtimes.com
+koreaherald.com
+yna.co.kr
+asahi.com
+mainichi.jp
+bangkokpost.com
+thejakartapost.com
+rappler.com
 # news agencies (their own sites, then their copy reprinted on other sites)
 reuters.com
 apnews.com

@@ -1081,6 +1081,14 @@ class Wires(unittest.TestCase):
         self.assertIsNone(B.wire_of("https://example.com/news/apple-shares"))
         self.assertLess(B.source_rank("wral.com", "https://www.wral.com/news/ap/x/"), B.pref_rank("dw.com"))
 
+    def test_home_paper_of_record_comes_first_for_its_own_country(self):
+        s = {"ti": {"nytimes.com": ("Irish vote counted", "https://nytimes.com/a", 0, False),
+                    "irishtimes.com": ("Irish vote counted today", "https://irishtimes.com/b", 0, False)}}
+        heads, _ = B.sources(s, {"irish", "vote"}, "EI", {"irishtimes.com": "EI", "nytimes.com": "US"})
+        self.assertEqual(heads[0]["d"], "irishtimes.com")
+        heads, _ = B.sources(s, {"irish", "vote"}, "CH", {"irishtimes.com": "EI", "nytimes.com": "US"})
+        self.assertEqual(heads[0]["d"], "nytimes.com")
+
 
 if __name__ == "__main__":
     unittest.main()
