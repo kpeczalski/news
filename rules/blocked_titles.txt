@@ -29,3 +29,4 @@
 \b(memorabilia|sells? (for .{1,20} )?at auction|fetches .{1,20} at auction|star wars|darth vader|lightsaber)\b
 \b(announces|reports) (its )?(first|second|third|fourth|q[1-4]) quarter( \d{4})? (financial )?results\b
 \bfinancial results\b
+\b(daughter|son|wife|husband|mother|father|sister|brother) of [A-Z][\w-]+ [A-Z][\w-]+,? (dies|dead|has died)\b
