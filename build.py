@@ -48,11 +48,17 @@ earthquake flood floods cyclone hurricane typhoon displaced humanitarian genocid
 CRISIS_SECTION = True
 ONGOING_LINES = 4                             # "ongoing": crises covered most over the last days
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
-# Countries of one conflict, counted as one crisis (one line, history added together).
-CONFLICT = {"IS": "IS-GZ", "GZ": "IS-GZ", "WE": "IS-GZ", "RS": "RS-UP", "UP": "RS-UP"}
-ACCIDENT_WORDS = set("""collapse collapses collapsed crash crashes crashed accident fire blaze derails derailed
-capsizes capsized sinks stampede""".split())
-ACCIDENT_COUNTRIES = 20                       # ...covered in this many countries to count as a crisis
+# Known armed conflicts (from the list of ongoing wars with 1,000+ deaths a year; check it now and
+# then). Countries of one conflict count as one crisis: one line, history added together.
+CONFLICTS = {
+    "Russia–Ukraine war": "RS UP", "Israel–Gaza war": "IS GZ WE", "Iran war": "IR", "Lebanon": "LE",
+    "Sudan war": "SU OD", "Myanmar civil war": "BM", "DR Congo conflict": "CG", "Ethiopia conflict": "ET",
+    "Somalia conflict": "SO", "Sahel insurgency": "ML UV NG", "Nigeria conflict": "NI", "Yemen war": "YM",
+    "Syria conflict": "SY", "Afghanistan and Pakistan insurgencies": "AF PK", "Mexico drug war": "MX",
+    "Haiti gang war": "HA", "Colombia conflict": "CO",
+}
+CONFLICT = {c: name for name, codes in CONFLICTS.items() for c in codes.split()}
+BIG_DISASTER_COUNTRIES = 20                   # outside known wars: a disaster or attack the world covers
 ONGOING_DAYS = 7
 ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
@@ -1849,8 +1855,8 @@ def render(state, now, cmap, built):
         best, sid, _ = max(items)
         if best < 4 or (not worldwide_enough(stories[sid]) and days_on < 3):
             continue                                  # a local accident is not a world crisis
-        if headline_share(stories[sid], ACCIDENT_WORDS) >= 0.4 and countries(stories[sid]) < ACCIDENT_COUNTRIES:
-            continue                                  # an accident is a crisis only when the world covers it
+        if w not in CONFLICTS and countries(stories[sid]) < BIG_DISASTER_COUNTRIES:
+            continue                                  # outside known wars, only what the world covers
         crises.append((best * (1 + ongoing), sid, w, days_on))
     crises.sort(reverse=True)
     added = 0
@@ -1863,6 +1869,8 @@ def render(state, now, cmap, built):
         line = make_line(sid, s, members(s), "ongoing", where)
         if line:
             line["covered_days"] = days_on
+            if where in CONFLICTS:
+                line["conflict"] = where
             lines.append(line)
             added += 1
     lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2}[l["section"]])   # order within a section kept

@@ -92,6 +92,7 @@ details > summary { list-style: none; cursor: pointer; }
 details > summary::-webkit-details-marker { display: none; }
 .m { display: block; color: var(--dim); font-size: 12.5px; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .m .tag { color: var(--warn); }
+.m .conflict { color: var(--fg); }
 /* pace of coverage: the hourly counter is coloured by how fast outlets are joining */
 .rate { padding: 0 5px; border-radius: 4px; }
 .rate.r0 { opacity: .7; }

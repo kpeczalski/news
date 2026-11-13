@@ -229,3 +229,4 @@ After an independent grade of the live page (5 out of 10):
 - Model prompt: subject-verb-object, right prepositions, no "-ing" add-ons; "drawing/prompting/sparking..." now cut as add-ons. Rules version 27 (all model lines rewritten).
 - Most covered needs score 12 (was 8): drops niche business filler.
 - Accidents (collapse, crash, fire, capsizing) count as crises only when covered in 20+ countries.
+- Crises limited to known armed conflicts (17, from the list of ongoing wars, incl. the Iran war) plus disasters/attacks covered in 20+ countries; lines labelled with the conflict name.
