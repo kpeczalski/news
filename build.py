@@ -50,6 +50,9 @@ ONGOING_LINES = 4                             # "ongoing": crises covered most o
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
 # Countries of one conflict, counted as one crisis (one line, history added together).
 CONFLICT = {"IS": "IS-GZ", "GZ": "IS-GZ", "WE": "IS-GZ", "RS": "RS-UP", "UP": "RS-UP"}
+ACCIDENT_WORDS = set("""collapse collapses collapsed crash crashes crashed accident fire blaze derails derailed
+capsizes capsized sinks stampede""".split())
+ACCIDENT_COUNTRIES = 20                       # ...covered in this many countries to count as a crisis
 ONGOING_DAYS = 7
 ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
@@ -1846,6 +1849,8 @@ def render(state, now, cmap, built):
         best, sid, _ = max(items)
         if best < 4 or (not worldwide_enough(stories[sid]) and days_on < 3):
             continue                                  # a local accident is not a world crisis
+        if headline_share(stories[sid], ACCIDENT_WORDS) >= 0.4 and countries(stories[sid]) < ACCIDENT_COUNTRIES:
+            continue                                  # an accident is a crisis only when the world covers it
         crises.append((best * (1 + ongoing), sid, w, days_on))
     crises.sort(reverse=True)
     added = 0

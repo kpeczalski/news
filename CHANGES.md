@@ -228,3 +228,4 @@ After an independent grade of the live page (5 out of 10):
 - Review fixes: crises section takes events only (not speeches), one line per conflict (Israel/Gaza/West Bank together, Russia/Ukraine together); "most covered" shown in order of countries; "disputed" label now "claims differ"; section labels simplified.
 - Model prompt: subject-verb-object, right prepositions, no "-ing" add-ons; "drawing/prompting/sparking..." now cut as add-ons. Rules version 27 (all model lines rewritten).
 - Most covered needs score 12 (was 8): drops niche business filler.
+- Accidents (collapse, crash, fire, capsizing) count as crises only when covered in 20+ countries.
