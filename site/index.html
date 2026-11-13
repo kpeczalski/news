@@ -88,7 +88,7 @@
     }
     var m = el("span", "m");
     var bits = [(l.countries || 1) + (l.countries === 1 ? " country" : " countries")];
-    if ((l.new_hour || 0) >= 10) bits.push("rising");
+    bits.push("+" + (l.new_hour || 0).toLocaleString() + " outlets/h");
     m.appendChild(document.createTextNode(bits.join(" · ")));
     (l.show_tags || l.tags || []).forEach(function (t) {
       if (TAGS[t]) { m.appendChild(document.createTextNode(" · ")); m.appendChild(el("span", "tag", TAGS[t])); }
