@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>news: how this works</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="window">
+  <div class="bar">
+    <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="tab">how.txt</div>
+  </div>
+  <div class="doc">
+    <h1>How this works</h1>
+    <p>This page shows what most news outlets are reporting. No person chooses the stories. A short program groups headlines, counts outlets and ranks stories by fixed rules. <a href="./">Back to the news.</a></p>
+    <p><strong>A line is not a verified fact.</strong> It is a count of what outlets report. Outlets can be wrong together, especially early. Open the sources before relying on a line.</p>
+
+    <h2>How a line is made</h2>
+    <ul>
+      <li>Every 15 minutes the program reads the newest file from the <a href="https://www.gdeltproject.org/" rel="noopener">GDELT Project</a>, which monitors news outlets worldwide.</li>
+      <li>Headlines that share enough distinctive words, or two or more uncommon names, are grouped as one story. Dates, weekdays and years are ignored.</li>
+      <li>The line is the words found in at least 35% of a story's headlines, in their usual order. Words like "not", "no" and "never" are kept. Attention-seeking words ("shocking", "slams", "bombshell") are never used.</li>
+      <li>Numbers come from headlines of the last 3 hours. If outlets give different numbers, the line shows the range, for example "8–9 dead".</li>
+      <li>A person is named only once at least 10 differently worded reports carry the story.</li>
+      <li>Each outlet counts once per story. When an outlet updates its headline, the new one replaces the old.</li>
+    </ul>
+
+    <h2>Who writes the sentence</h2>
+    <ul>
+      <li>A small open-source language model (qwen3, run by the program itself; nothing is sent to an AI company) turns each story's headlines into one sentence of at most 10 words stating one fact.</li>
+      <li>The model only rewords. It does not pick stories, rank them or set the labels.</li>
+      <li>Every sentence is checked by fixed rules before it is shown. Each word and number must appear in at least two differently worded headlines of that story. A number must be one the counted words state, and must stay with its own word ("8 dead" cannot become "8 injured"). No add-on clauses. A claim must name its source up front, the way the headlines do. Two words may not appear in an order no headline uses. A shared "not" must be kept and none may be added. Attribution such as "police say" must be kept when most headlines carry it. Attention-seeking words are refused.</li>
+      <li>Stories where outlets disagree never get a model sentence.</li>
+      <li>A word the headlines qualify ("alleged affair", "suspected spy") may only appear with its qualifier.</li>
+      <li>A sentence that fails the check is thrown away. The line then shows a real headline, from a renowned outlet first, otherwise the one the most outlets printed, provided it is short and plain and passes the same word and number checks; otherwise the counted words. Any wording that hedges ("alleged", "suspected") gets the claim label. Numbers are shown as digits. Open a line to see the counted words and the real headlines behind it.</li>
+      <li>Without a model the page still works and shows counted words only.</li>
+    </ul>
+
+    <h2>How lines are ordered</h2>
+    <ul>
+      <li>Two sections that do not overlap. "New in the last 3 hours" holds stories whose first report is under 3 hours old and that already have substantial coverage (up to 5); when there is none, the section is not shown. The second section's title states how many hours the program has actually been collecting, up to 24. It holds the biggest stories that began earlier (up to 7); the "+N this hour" figure shows which of them are still moving.</li>
+      <li>By the number of differently worded reports in the last 24 hours. Word-for-word reprints of one agency story count one tenth each, so 200 reprints weigh as much as 20 independent reports.</li>
+      <li>World weighting: a story carried almost entirely by one country's outlets keeps a quarter of its weight; full weight needs coverage shared evenly across about four countries or more. Outlets in other languages count 0.5 each.</li>
+      <li>One line per event: a follow-up or reaction that carries two of the event's three main names is counted under that line.</li>
+      <li>Commentary, explainers, sport and entertainment are ignored.</li>
+      <li>Domestic news: when over 60% of a story's outlets (or of its differently worded reports) are in the country where it happened, it is listed only if at least 50 outlets in other languages carry it.</li>
+      <li>A remark ("X says…") that no outlet in another language picked up is not listed.</li>
+      <li>Order is by world coverage, so a story with fewer outlets can stand above one with more.</li>
+      <li>International floor: a story is listed only if its coverage is spread over about 2.5 countries' worth of outlets, or at least 3 outlets in other languages carry it.</li>
+      <li>At most 2 lines about events in any one country.</li>
+      <li>Country shares are counted per differently worded report, so one agency text reprinted by many papers in one country is one vote.</li>
+      <li>A story that no outlet in another language carries keeps 0.6 of its weight.</li>
+      <li>Affairs of state (governments, elections, war, strikes, talks, sanctions, tariffs) weigh 1.5 times as much. The word list is in the program under STATE_WORDS.</li>
+      <li>A word-for-word reprint counts 0.3 instead of 0.1 once a story is carried in 3 or more countries, so agency stories are not undercounted.</li>
+      <li>A story also needs a minimum weight to be listed, so on a quiet day the list is short, not padded.</li>
+      <li>A story needs at least 5 outlets to appear. The list is the same for every reader.</li>
+    </ul>
+
+    <h2>What the labels mean</h2>
+    <ul>
+      <li><strong>Reports:</strong> at the start of a line: the headlines hedge this ("alleged", "suspected") and name no speaker.</li>
+      <li><strong>claim</strong> (only on lines shown as counted words): a quarter or more of the headlines attribute the statement ("says", "claims", "alleged").</li>
+      <li><strong>disputed</strong>: a minority of headlines negate what the rest state, or a fifth or more carry words like "denies" or "retracted".</li>
+      <li><strong>early</strong>: the story is less than 2 hours old. Early figures are often revised.</li>
+      <li><strong>+14/h</strong>: outlets that joined in the last hour.</li>
+      <li><strong>+</strong> before a line number: the story was not on the page at your last visit.</li>
+    </ul>
+
+    <h2>Known limits</h2>
+    <ul>
+      <li>Wording comes from English-language headlines only. Outlets in other languages add to the outlet and country counts through GDELT's machine translation of names and places.</li>
+      <li>Coverage is not importance. Stories big in English-language media rank higher than they would in a truly global count.</li>
+      <li>Country counts are estimates from GDELT's outlet list and from web address endings.</li>
+      <li>Grouping is by word overlap and can merge two events or split one.</li>
+      <li>The day in the file name follows UTC. Times are shown in your local time.</li>
+    </ul>
+
+    <h2>Sources</h2>
+    <p>Among a story's sources, international news agencies and public broadcasters are listed first (Reuters, AP, AFP, BBC, DW and others), then newspapers of record, then the remaining outlets by size (the number of articles GDELT has seen from them). A listed outlet's headline is preferred when a line falls back to a real headline. The list is in <a href="rules/preferred_sources.txt">preferred_sources.txt</a> and can be edited. It does not affect which stories are chosen or their order.</p>
+
+    <h2>Open rules</h2>
+    <p>Headline patterns that are ignored: <a href="rules/blocked_titles.txt">blocked_titles.txt</a>. Outlets that are ignored: <a href="rules/blocked_domains.txt">blocked_domains.txt</a>. Each day's final list is kept in the archive, reachable from "previous day" on the main page.</p>
+
+    <h2>Corrections and contact</h2>
+    <p>If a line is wrong or harms you, write to <span class="fill">CONTACT EMAIL</span>. Lines found to be wrong are removed and the removal is noted here.</p>
+    <p>Publisher and responsible editor: <span class="fill">PUBLISHER NAME, COUNTRY</span>.</p>
+
+    <h2>Privacy</h2>
+    <p>No cookies, no analytics, no accounts, no third-party fonts or scripts. To mark stories that are new since your last visit, the page stores a short list of story numbers in your own browser; it never leaves your device. The hosting provider, GitHub, receives your IP address when you load the page, as any web host does.</p>
+
+    <h2>Credit</h2>
+    <p>Data: <a href="https://www.gdeltproject.org/" rel="noopener">The GDELT Project</a>. Typeface: JetBrains Mono, SIL Open Font License.</p>
+  </div>
+</div>
+</body>
+</html>

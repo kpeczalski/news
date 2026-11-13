@@ -1,0 +1,58 @@
+name: update
+on:
+  schedule:
+    - cron: "3,18,33,48 * * * *"   # 3 minutes after each 15-minute news batch
+  workflow_dispatch:
+  push:
+    branches: [main]
+permissions:
+  contents: write                  # to publish the built site to the gh-pages branch
+concurrency:
+  group: update
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 14
+    env:
+      REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
+      AI_MODEL: qwen3:1.7b          # small model that runs on the server's processor; ~1.4 GB
+      OLLAMA_MODELS: ${{ github.workspace }}/models
+    steps:
+      - name: Get the code and the previous output
+        run: |
+          git clone --quiet --depth 1 "$REMOTE" src
+          if git ls-remote --exit-code --heads "$REMOTE" gh-pages >/dev/null; then
+            git clone --quiet --depth 1 --branch gh-pages "$REMOTE" prev
+          else
+            code=$?
+            [ "$code" -eq 2 ] || exit "$code"     # 2 = no such branch: genuine first run
+            mkdir prev
+          fi
+      - name: Keep the model between runs
+        uses: actions/cache@v6
+        with:
+          path: models
+          key: ollama-${{ env.AI_MODEL }}
+      - name: Start the sentence writer
+        continue-on-error: true      # without it the page still builds, with headlines instead
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh >/dev/null
+          sudo systemctl stop ollama 2>/dev/null || true
+          mkdir -p models
+          (OLLAMA_MODELS="$OLLAMA_MODELS" ollama serve >/dev/null 2>&1 &)
+          for i in $(seq 1 30); do curl -s localhost:11434/api/tags >/dev/null && break; sleep 1; done
+          ollama pull "$AI_MODEL"
+      - name: Check the rules
+        run: cd src && python3 -m unittest -q test_build
+      - name: Screen, group, compress
+        run: cd src && STATE_DIR="$PWD/../prev" OUT_DIR="$PWD/../out" python3 build.py
+      - name: Publish
+        run: |
+          cd out
+          git init --quiet --initial-branch gh-pages
+          git config user.name "news"
+          git config user.email "news@users.noreply.github.com"
+          git add --all
+          git commit --quiet --message "update $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push --quiet --force "$REMOTE" gh-pages

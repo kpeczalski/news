@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="What most news outlets report right now, in the words they share. Built by counting, not written by anyone.">
+<title>news</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!--page-->
+<div class="window">
+  <div class="bar">
+    <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
+    <div class="tab" id="tab">today.news</div>
+  </div>
+  <ol class="code" id="code" aria-live="off">
+    <li class="note"><span class="c">// loading. Stories appear here, most widely reported first.</span></li>
+  </ol>
+  <div class="status" id="status"><span>connecting</span></div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var REFRESH_MS = 2 * 60 * 1000;      // a local check; new data arrives about every 15 minutes
+  var STALE_MIN = 60;
+  var SEEN_KEY = "plainfacts.seen";
+
+  var shown = null;                    // payload currently on screen
+  var open = {};                       // story ids the reader expanded
+  var days = [];                       // archive days available
+  var seen = null;                     // story ids present at the reader's previous visit
+  try { seen = JSON.parse(localStorage.getItem(SEEN_KEY)); } catch (e) { seen = null; }
+  if (!Array.isArray(seen)) seen = null;
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = text;
+    return e;
+  }
+  function plural(n, word) { return n.toLocaleString() + " " + word + (n === 1 ? "" : "s"); }
+  function hhmm(iso) {
+    var d = new Date(iso);
+    return isNaN(d) ? "" : d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+  function ago(iso) {
+    var min = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (min < 1) return "just now";
+    if (min < 60) return min + " min ago";
+    var h = Math.floor(min / 60);
+    return h < 48 ? h + " h ago" : Math.floor(h / 24) + " days ago";
+  }
+  function route() {                   // "#2026-11-12" or "#2026-11-12-s123"
+    var m = /^#(\d{4}-\d\d-\d\d)(?:-s(\w+))?$/.exec(location.hash);
+    return m ? { day: m[1], story: m[2] || null } : null;
+  }
+  var TAGS = { claim: "claim", disputed: "disputed", early: "early" };
+
+  function bars(a) {
+    var max = Math.max.apply(null, a);
+    if (!max) return null;
+    var b = el("span", "bars");
+    b.setAttribute("aria-hidden", "true");
+    b.title = "new outlets per 15 minutes, last 3 hours";
+    a.forEach(function (v) {
+      var i = el("i");
+      i.style.height = Math.max(1, Math.round(v / max * 11)) + "px";
+      b.appendChild(i);
+    });
+    return b;
+  }
+
+  function line(l, r, day) {
+    var li = el("li"), d = el("details"), s = el("summary");
+    li.id = "s" + l.id;
+    if (seen && seen.indexOf(l.id) < 0 && !r) li.className = "new";
+    if (r && r.story === l.id) { li.className = "target"; d.open = true; }
+    if (open[l.id]) d.open = true;
+    d.addEventListener("toggle", function () { open[l.id] = d.open; });
+
+    if (l.sentence) {
+      s.appendChild(el("span", "t", l.sentence));
+    } else {
+      s.appendChild(el("span", "k", l.key));
+      s.appendChild(document.createTextNode(": " + l.text));
+    }
+    var m = el("span", "m");
+    var bits = [l.outlets.toLocaleString()];
+    if (l.new_hour) bits.push("+" + l.new_hour.toLocaleString() + "/h");
+    m.appendChild(document.createTextNode(bits.join(" · ")));
+    (l.show_tags || l.tags || []).forEach(function (t) {
+      if (TAGS[t]) { m.appendChild(document.createTextNode(" · ")); m.appendChild(el("span", "tag", TAGS[t])); }
+    });
+    s.appendChild(m);
+    d.appendChild(s);
+
+    var more = el("div", "more");
+    if (l.sentence) {
+      var c = el("div", "counted");
+      c.appendChild(document.createTextNode("counted words: "));
+      c.appendChild(el("span", "k", l.key));
+      c.appendChild(document.createTextNode(": " + l.text));
+      more.appendChild(c);
+    }
+    (l.headlines || []).forEach(function (h) {
+      var a = el("a", "h");
+      a.href = h.u; a.target = "_blank"; a.rel = "noopener noreferrer";
+      a.appendChild(document.createTextNode("“" + h.t + "” "));
+      a.appendChild(el("span", "", h.d));
+      more.appendChild(a);
+    });
+    if ((l.links || []).length) {
+      var also = el("div", "also");
+      l.links.forEach(function (k) {
+        var a = el("a", "", k.d);
+        a.href = k.u; a.target = "_blank"; a.rel = "noopener noreferrer";
+        also.appendChild(a);
+      });
+      more.appendChild(also);
+    }
+    var foot = el("div", "foot");
+    var facts = ["first seen " + hhmm(l.first), plural(l.wordings, "wording")];
+    if (l.countries > 1) facts.push(l.countries + " countries");
+    if (l.related) facts.push(l.related + " related");
+    if (l.other_lang) facts.push(l.other_lang.toLocaleString() + " non-English");
+    var fs = el("span", "", facts.join(" · "));
+    var b = bars(l.spark || []);
+    if (b) fs.appendChild(b);
+    foot.appendChild(fs);
+    var copy = el("button", "copy", "copy link");
+    copy.type = "button";
+    copy.addEventListener("click", function () {
+      var url = location.href.split("#")[0] + "#" + day + "-s" + l.id;
+      var done = function () { copy.textContent = "link copied"; };
+      var fallback = function () { copy.textContent = url; };
+      try { navigator.clipboard.writeText(url).then(done, fallback); } catch (e) { fallback(); }
+    });
+    foot.appendChild(copy);
+    more.appendChild(foot);
+    d.appendChild(more);
+    li.appendChild(d);
+    return li;
+  }
+
+  function status(data, r) {
+    var st = document.getElementById("status");
+    st.textContent = "";
+    var sc = data.screened || {};
+    st.appendChild(el("span", "", (sc.outlets || 0).toLocaleString() + " outlets screened"));
+    if (r) {
+      st.appendChild(el("span", "", "archive of " + data.day));
+      var today = el("a", "", "today");
+      today.href = "#";
+      today.addEventListener("click", function (e) {
+        e.preventDefault();
+        history.replaceState(null, "", location.pathname + location.search);
+        shown = null; load();
+      });
+      st.appendChild(today);
+    } else {
+      var mins = (Date.now() - new Date(data.updated).getTime()) / 60000;
+      var until = data.data_until ? hhmm(data.data_until) : "";
+      st.appendChild(el("span", mins > STALE_MIN ? "stale" : "",
+        mins > STALE_MIN ? "stale: last update " + ago(data.updated) : "news up to " + until));
+    }
+    var i = days.indexOf(data.day);
+    var prev = i > 0 ? days[i - 1] : (i < 0 && days.length ? days[days.length - 1] : null);
+    if (prev && prev !== data.day) {
+      var p = el("a", "", "previous day");
+      p.href = "#" + prev;
+      st.appendChild(p);
+    }
+    var how = el("a", "", "how this works");
+    how.href = "how.html";
+    st.appendChild(how);
+    if (data.note) st.appendChild(el("span", "stale", data.note));
+  }
+
+  function render(data, r) {
+    shown = data;
+    var code = document.getElementById("code");
+    document.getElementById("tab").textContent = (data.day || "today") + ".news";
+    code.textContent = "";
+    var found = false, section = null;
+    var hours = data.history_hours || 24;
+    var SECTIONS = { "new": "// new in the last 3 hours", "day": "// last " + hours + " hours" };
+    var legend = ", by world coverage  (outlets · new per hour)";
+    (data.lines || []).forEach(function (l) {
+      if (r && r.story === l.id) found = true;
+      if (l.section && l.section !== section && SECTIONS[l.section]) {
+        section = l.section;
+        var h = el("li", "note sec");
+        h.appendChild(el("span", "c", SECTIONS[section] + legend));
+        legend = "";
+        code.appendChild(h);
+      }
+      code.appendChild(line(l, r, data.day));
+    });
+    if (!(data.lines || []).length) {
+      var none = el("li", "note");
+      none.appendChild(el("span", "c", "// no story has reached enough outlets yet"));
+      code.appendChild(none);
+    }
+    if (r && r.story && !found) {
+      var gone = el("li", "note");
+      gone.appendChild(el("span", "c", "// the linked story is no longer among this day's most reported"));
+      code.appendChild(gone);
+    }
+    status(data, r);
+    if (r && found) {
+      var t = document.getElementById("s" + r.story);
+      if (t && t.scrollIntoView) t.scrollIntoView({ block: "center" });
+    }
+  }
+
+  function getJSON(path) {
+    return fetch(path, { cache: "no-store" }).then(function (res) {
+      if (!res.ok) throw new Error(String(res.status));
+      return res.json();
+    });
+  }
+
+  function load() {
+    var r = route();
+    getJSON(r ? "archive/" + r.day + ".json" : "data.json").then(function (data) {
+      // Rebuild the list only when the data changed, so focus and open lines survive.
+      if (!shown || shown.updated !== data.updated || shown.day !== data.day || r) render(data, r);
+      else status(data, r);
+    }).catch(function () {
+      var st = document.getElementById("status");
+      if (shown) return;
+      var msg = r ? "no archive exists for " + r.day : "no data yet: the first update has not run";
+      var code = document.getElementById("code"), li = el("li", "note");
+      code.textContent = "";
+      li.appendChild(el("span", "c", "// " + msg));
+      code.appendChild(li);
+      st.textContent = "";
+      if (r) { var back = el("a", "", "today"); back.href = "./"; st.appendChild(back); }
+      else st.appendChild(el("span", "", "waiting"));
+    });
+  }
+
+  function remember() {                // what the reader has seen, for the "+" marks next time
+    if (!shown || route()) return;
+    try { localStorage.setItem(SEEN_KEY, JSON.stringify(shown.lines.map(function (l) { return l.id; }))); } catch (e) {}
+  }
+
+  getJSON("archive/index.json").then(function (d) { if (Array.isArray(d)) days = d; if (shown) status(shown, route()); })
+    .catch(function () {});
+  load();
+  setInterval(load, REFRESH_MS);
+  setInterval(function () { if (shown) status(shown, route()); }, 30000);
+  window.addEventListener("hashchange", function () { shown = null; load(); });
+  document.addEventListener("visibilitychange", function () {
+    if (document.hidden) remember(); else load();
+  });
+  window.addEventListener("pagehide", remember);
+})();
+</script>
+<!--/page-->
+</body>
+</html>

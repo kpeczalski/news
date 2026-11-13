@@ -1,0 +1,40 @@
+# Outlets shown first among a story's sources, and whose headline is preferred when a line falls
+# back to a real headline. Order matters: top of the list comes first. One domain per line.
+# First the international news agencies and public broadcasters, then widely read newspapers of
+# record from several countries. After this list, sources are ordered by outlet size.
+# "Reliable" and "neutral" are judgments; edit this list freely. It does not affect which stories
+# are chosen or how they are ranked.
+reuters.com
+apnews.com
+afp.com
+bbc.com
+bbc.co.uk
+dw.com
+france24.com
+npr.org
+pbs.org
+yle.fi
+cbc.ca
+abc.net.au
+nhk.or.jp
+swissinfo.ch
+euronews.com
+aljazeera.com
+rfi.fr
+kyodonews.net
+# newspapers of record and major international outlets
+ft.com
+economist.com
+theguardian.com
+nytimes.com
+washingtonpost.com
+wsj.com
+bloomberg.com
+lemonde.fr
+elpais.com
+spiegel.de
+scmp.com
+japantimes.co.jp
+straitstimes.com
+thehindu.com
+hs.fi
