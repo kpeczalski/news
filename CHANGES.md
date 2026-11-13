@@ -241,3 +241,4 @@ After an independent grade of the live page (5 out of 10):
 - Crises order: recency (halves after 6 h) x toll (log scale) x reliability (one-side claims half, 2 papers of record +20%). No line numbers on the page (user).
 - Crises: an event with no reported toll weighs like ~9 killed (not zero), so a large attack still unfolding is not ranked last.
 - Crisis lines: who attacked whom is checked against the headlines (Russia/Ukraine, Israel/Gaza); a story whose headlines point both ways (two events merged) is left off, a line pointing the other way is dropped; "shoots down/intercepts" reverses the actor.
+- Crisis lines: sources telling the opposite-direction event are not listed under the line; a headline stating the toll is preferred.

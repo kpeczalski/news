@@ -1478,7 +1478,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             # A crisis line says who did what ("Ukrainian drone strike kills 4 in Volgograd"), not who
             # says it: a headline without "says/claims" comes first when one passes.
             plain = not (event and rw & SPEECH)
-            ranked.append(((not accuses, plain, not amid, enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
+            told = not event or bool(TOLL_RE.search(digits(text)))   # a crisis line keeps its toll when one is given
+            ranked.append(((not accuses, plain, told, not amid, enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
@@ -1986,6 +1987,9 @@ def render(state, now, cmap, built):
         dirs = [direction(t, sides) for t in picks[l["id"]][0]]
         fwd, back = dirs.count(1), dirs.count(-1)
         mine = direction(l["sentence"], sides)
+        major = 1 if fwd > back else -1 if back > fwd else 0
+        if major:                                     # sources that tell the other event are not shown here
+            l["headlines"] = [h for h in l["headlines"] if direction(h["t"], sides) != -major]
         if (fwd and back and min(fwd, back) >= 0.3 * (fwd + back)) or \
                 (mine and (fwd or back) and mine != (1 if fwd > back else -1)):
             DIAG.setdefault("skipped", []).append({"why": "direction unclear or inverted", "line": l["sentence"],
