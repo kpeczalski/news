@@ -67,7 +67,8 @@ TITLE_CAP = 300
 AI = os.environ.get("AI", "auto")                           # "auto": use it if Ollama is running; "off"
 OLLAMA = os.environ.get("OLLAMA_URL", "http://127.0.0.1:11434")
 AI_MODEL = os.environ.get("AI_MODEL", "")                   # empty: first installed of AI_PREFER
-AI_PREFER = ["qwen3:8b", "qwen3:14b", "gemma3:12b", "llama3.1:8b", "mistral:7b", "qwen3:1.7b", "qwen3:0.6b"]
+AI_PREFER = ["qwen3:8b", "qwen3:14b", "gemma3:12b", "llama3.1:8b", "mistral:7b", "qwen3:4b", "qwen3:1.7b", "qwen3:0.6b"]
+AI_TRIES = int(os.environ.get("AI_TRIES", "4"))             # attempts per story (fewer for slow models)
 AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
@@ -1190,8 +1191,23 @@ def add_sentences(state, lines, picks, started):
         claim, disputed = "claim" in l["tags"], "disputed" in l["tags"]
         sig = "%d|%s|%s|%s|%s|%d" % (AI_RULES, model, l["key"], l["text"], ",".join(l["tags"]),
                                   zlib.crc32("\n".join(sorted(shown)).encode()))
-        hit = cache.get(l["id"])
         negate0 = bool({"not", "never", "no"} & set((l["key"] + " " + l["text"]).split()))
+        # Pick, don't write: a real headline that passes every check is used as printed, and the
+        # model is asked only when none does (a small model invents words; a headline cannot).
+        if name_ok and not disputed:
+            picked = common_headline(titles, ckeys, claim, renowned, l["text"], negate0)
+            if picked:
+                l["sentence"], l["by"] = picked, "headline"
+                cache.pop(l["id"], None)
+                if set(raw_words(picked)) & HEDGE and "claim" not in l["tags"]:
+                    l["tags"].insert(0, "claim")
+                l["sentence"] = digits(picked)
+                hedged = set(raw_words(picked)) & (SPEECH | QUALIFIER | {"allegation", "allegations"})
+                if "claim" in l["tags"] and not hedged:
+                    l["sentence"] = "Reports: " + l["sentence"]
+                l["show_tags"] = [t for t in l["tags"] if t != "claim"]
+                continue
+        hit = cache.get(l["id"])
         if hit and hit["sig"] != sig and hit["s"] and name_ok and not disputed and \
                 not check_sentence(hit["s"], titles, negate0, ckeys, claim, l["text"]):
             hit["sig"] = sig                           # the accepted sentence still holds: keep it
@@ -1214,7 +1230,7 @@ def add_sentences(state, lines, picks, started):
             sentence, why = "", ""
             try:
                 top = Counter(titles).most_common(1)[0][0] if titles else ""
-                for n_try, extra in enumerate(hints):
+                for n_try, extra in enumerate(hints[:AI_TRIES]):
                     heads = shown
                     if n_try == 1 and top:            # second try: shorten the most printed headline
                         heads = [top]

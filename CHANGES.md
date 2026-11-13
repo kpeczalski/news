@@ -2,6 +2,11 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 15:15
+After a review of the model setup:
+- Pick, don't write: a real headline that passes every check is used as printed; the model only
+  writes when none does. Model now qwen3:4b with 2 tries (more capable, used rarely).
+
 ## 2026-11-13, 15:00
 - Words that only repeat shared names (e.g. "nvidia") no longer link two stories; the biggest
   stories can use a widely printed headline again (support capped at 6 wordings).
