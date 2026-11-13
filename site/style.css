@@ -92,6 +92,12 @@ details > summary { list-style: none; cursor: pointer; }
 details > summary::-webkit-details-marker { display: none; }
 .m { display: block; color: var(--dim); font-size: 12.5px; margin-top: 3px; font-variant-numeric: tabular-nums; }
 .m .tag { color: var(--warn); }
+/* pace of coverage: the hourly counter is coloured by how fast outlets are joining */
+.rate { padding: 0 5px; border-radius: 4px; }
+.rate.r0 { opacity: .7; }
+.rate.r1 { color: var(--fg); }
+.rate.r2 { color: var(--up); background: color-mix(in srgb, var(--up) 14%, transparent); }
+.rate.r3 { color: var(--num); background: color-mix(in srgb, var(--num) 16%, transparent); font-weight: 500; }
 .bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 11px; margin-left: 8px; vertical-align: baseline; }
 .more .counted { color: var(--dim); padding: 4px 0; }
 .bars i { width: 3px; background: var(--dim); border-radius: 1px; }

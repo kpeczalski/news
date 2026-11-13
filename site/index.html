@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="What most news outlets report right now, in the words they share. Built by counting, not written by anyone.">
 <title>news</title>
-<link rel="stylesheet" href="style.css?v=2">
+<link rel="stylesheet" href="style.css?v=3">
 </head>
 <body>
 <!--page-->
@@ -87,9 +87,12 @@
       s.appendChild(document.createTextNode(": " + l.text));
     }
     var m = el("span", "m");
-    var bits = [(l.countries || 1) + (l.countries === 1 ? " country" : " countries")];
-    bits.push("+" + (l.new_hour || 0).toLocaleString() + " outlets/h");
-    m.appendChild(document.createTextNode(bits.join(" · ")));
+    m.appendChild(document.createTextNode((l.countries || 1) + (l.countries === 1 ? " country" : " countries") + " · "));
+    var nh = l.new_hour || 0;          // pace: quiet, steady, rising, surging
+    var rate = el("span", "rate " + (nh >= 30 ? "r3" : nh >= 10 ? "r2" : nh >= 3 ? "r1" : "r0"),
+                  "+" + nh.toLocaleString() + " outlets/h");
+    rate.title = "outlets that joined in the last hour";
+    m.appendChild(rate);
     (l.show_tags || l.tags || []).forEach(function (t) {
       if (TAGS[t]) { m.appendChild(document.createTextNode(" · ")); m.appendChild(el("span", "tag", TAGS[t])); }
     });
