@@ -2,6 +2,10 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 14:50
+- A real headline printed word for word by a third of the outlets is used whole (it is what
+  most outlets say), giving lines their context. Retries ask for context instead of fewer words.
+
 ## 2026-11-13, 14:40
 - Clearer lines: the model is asked for who, what, where and what it is about, in up to 12 words;
   a sentence must carry at least half of the story's shared words, and a retry names them.

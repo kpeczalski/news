@@ -1144,10 +1144,14 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     # and in at least 15% of them in a big story, so one outlet's colour ("scandal", "worldwide") is dropped.
     n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
     support = 1 if n_wordings < 6 else max(2, math.ceil(0.15 * n_wordings))
+    printed = Counter(titles)
     for _, title in sorted(ranked, reverse=True):
         plain = title.rstrip(".")
+        # A headline that a third of the outlets print word for word IS what most outlets say.
+        full = next((t for t in printed if t.startswith(plain)), plain)
+        need = 1 if printed[full] >= max(3, len(titles) / 3) else support
         if not check_sentence(plain, titles, must_negate, consensus_keys, False, counted,
-                              max_words=AI_WORDS + 2, clauses=False, min_support=support):
+                              max_words=AI_WORDS + 2, clauses=False, min_support=need):
             return plain
     return ""
 

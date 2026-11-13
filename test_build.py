@@ -702,7 +702,7 @@ class Writer(unittest.TestCase):
             "Pope Leo returns to Peru", "Pope Leo XIV returns home to Peru", "Leo returns home to Peru as pope",
             "Pope back home in Peru", "Peru greets returning pope", "Pope Leo lands in Peru"]
         self.assertEqual(B.common_headline(titles, {"pope", "peru", "return"}, False, None, "pope leo, 3 million"),
-                         "Pope returns home to Peru")
+                         "Pope returns home to Peru as 3 million expected at Lima Mass")   # printed by a third: kept whole
 
     def test_page_states_how_much_history_it_has(self):
         st = B.new_state()
@@ -717,6 +717,12 @@ class Writer(unittest.TestCase):
         titles = base * 2 + [coloured] * 2 + ["Chipco CEO quits", "Chipco CEO quits as board meets"] * 2
         keys = {"chipco", "ceo", "quit"}
         self.assertNotEqual(B.common_headline(titles, keys, False, {coloured: 0}), coloured)
+
+    def test_majority_headline_is_used_as_printed(self):
+        wire = "EU leaders to meet in Dublin amid prospect of Europe joining Ukraine peace talks"
+        titles = [wire] * 40 + ["EU leaders gather in Dublin on Ukraine talks %d" % i for i in range(30)]
+        keys = {"eu", "leader", "dublin", "ukraine", "peace", "talk", "europe"}
+        self.assertTrue(B.common_headline(titles, keys, False, {}, "dublin: EU leaders europe ukraine peace talks"))
 
     def test_fallback_headline_is_checked_and_shown_in_digits(self):
         titles = ["Pope Leo visits his second home, Peru"] * 3 + ["Pope Leo returns to Peru"] * 2 + [
