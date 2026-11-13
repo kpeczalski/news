@@ -40,6 +40,15 @@ MIN_SPREAD = float(os.environ.get("MIN_SPREAD", "2.5"))   # to be listed: this m
 MIN_OTHER_LANG = 3                            # ...or this many outlets in other languages
 NO_OTHER_LANG = 0.6                           # a story no outlet in another language carries keeps this share
 DOMESTIC_KEEP = 50                            # domestic news is listed only if this many outlets in other languages carry it
+LIFE_WEIGHT = 0.5                             # a story whose reports mostly tell of deaths counts up to 1.5 times
+DEATH_WORDS = set("killed kills kill dead dies died death deaths wounded injured injures casualties massacre".split())
+CRISIS_WORDS = set("""war airstrike airstrikes bombing shelling missile missiles drone
+drones troops military ceasefire hostages hostage refugees famine siege offensive invasion militants fighting
+earthquake flood floods cyclone hurricane typhoon displaced humanitarian genocide gunmen""".split())
+ONGOING_LINES = 3                             # "ongoing": crises covered most over the last days
+ONGOING_DAYS = 7
+ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
+ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
 PER_COUNTRY = 2                               # at most this many lines about events in one country
 PER_REGION = 3                                # and at most this many about one world region
 # Regions by GDELT (FIPS) country code; anything not listed counts as "other".
@@ -449,6 +458,8 @@ def latest_slot(name):
 
 
 SPORT_THEME = re.compile(r"SPORT|ATHLET|_PLAYER|FOOTBALL|SOCCER|CRICKET|OLYMPIC", re.I)
+CRISIS_THEME = re.compile(r"ARMEDCONFLICT|MILITARY|TERROR|KILL|REFUGEE|HUMANITARIAN|FAMINE|NATURAL_DISASTER|"
+                          r"CEASEFIRE|DISPLACED|EPIDEMIC|GENOCIDE|AIRSTRIKE|SIEGE", re.I)
 CELEB_THEME = re.compile(r"TAX_FNCACT_(ACTRESS|ACTOR|SINGER|CELEBRIT|MUSICIAN|RAPPER|COMEDIAN|POPSTAR)|ENTERTAINMENT", re.I)
 
 
@@ -460,6 +471,10 @@ def entities(f):
     ents = set()
     if SPORT_THEME.search(f[7] or "") or SPORT_THEME.search(f[8] or ""):
         ents.add("T:sport")                           # GDELT's own topic tags mark it as sport
+    if CRISIS_THEME.search(f[7] or "") or CRISIS_THEME.search(f[8] or ""):
+        ents.add("T:crisis")                          # war, attacks, disasters, famine, refugees
+    if re.search(r"(^|;)(KILL|WOUND)#", f[5] or ""):
+        ents.add("T:death")                           # GDELT counted people killed or wounded
     if CELEB_THEME.search(f[7] or "") or CELEB_THEME.search(f[8] or ""):
         ents.add("T:celeb")                           # ... or about actors, singers, celebrities
     for p in f[11].split(";")[:15]:
@@ -1538,8 +1553,16 @@ def render(state, now, cmap, built):
         boost = STATE_BOOST if STATE_WORDS & {FOLD.get(k, k) for k in top_tokens(s)} else 1.0
         if cmap and not other:
             boost *= NO_OTHER_LANG
+        boost *= 1 + LIFE_WEIGHT * min(1.0, share(s, "T:death", DEATH_WORDS) / 0.5)
         return ((w + reprint * max(0, english - w) + OTHER_LANG_WEIGHT * other) * spread * boost,
                 c, len(members(s)))
+
+    def share(s, tag, words):
+        """Share of a story's reports with a GDELT tag, or (for older data) whose headline uses the words."""
+        tagged = s["e"].get(tag, 0) / max(1, s["n"])
+        titles = [t[0] for t in s["ti"].values()]
+        worded = sum(1 for t in titles if set(raw_words(t)) & words) / max(1, len(titles))
+        return max(tagged, worded)
 
     def event_country(s):
         codes = [(c, e[2:]) for e, c in s["e"].items() if e.startswith("K:")]
@@ -1634,6 +1657,47 @@ def render(state, now, cmap, built):
         if len(DIAG.setdefault("skipped", [])) < 40:
             DIAG["skipped"].append({"why": why, "score": round(score(s)[0], 1), "n": len(s["d"]),
                                     "where": event_country(s), "names": top_ents(s)[:3]})
+    def make_line(sid, s, mem, section, where):
+        key, text, tags, ckeys = consensus(s, now)
+        if not key:
+            return None
+        if cmap and "claim" in tags and not s["f"]:
+            return None                                  # a remark nobody abroad picked up is not an event
+        heads, links = sources(s, ckeys, where, cmap)
+        all_titles = [t[0] for t in s["ti"].values() if not t[3]]
+        renowned = {}
+        for dom, t in s["ti"].items():
+            r = source_rank(dom, t[1])
+            if r < 999 and not t[3]:
+                renowned[t[0]] = min(r, renowned.get(t[0], 999))
+        shown, seen_w = [], set()
+        for t in sorted(all_titles, key=lambda t: (renowned.get(t, 999) == 999,
+                                                   -len(ckeys & {k for k, _ in tokenise(t)}))):
+            w = tuple(k for k, _ in tokenise(t))
+            if w not in seen_w and len(shown) < AI_HEADLINES:
+                seen_w.add(w)
+                shown.append(t)
+        # A small story gets a sentence only if it is not about a person (see names_ok).
+        need_p = max(2, math.ceil(0.2 * s["n"]))
+        persons = {k for e, c in s["e"].items() if e.startswith("P:") and c >= need_p
+                   for part in e[2:].split() for k, _ in tokenise(part)}
+        picks[sid] = (all_titles, shown, names_ok(s, now) or not has_person(s), ckeys, renowned, persons)
+        firsts = [v[0] for v in mem.values()]
+        line = {
+            "id": sid, "section": section, "key": key, "text": text, "tags": tags, "related": 0,
+            "score": round(score(s)[0], 1),
+            "outlets": len(mem),
+            "wordings": wordings(s, now - RANK_WINDOW),
+            "countries": countries(s),
+            "other_lang": len(s["f"]),
+            "new_hour": sum(1 for v in firsts if v > now - 4),
+            "prev_hour": sum(1 for v in firsts if now - 8 < v <= now - 4),
+            "spark": [sum(1 for v in firsts if v == now - 11 + i) for i in range(12)],
+            "first": iso(s["first"]),
+            "headlines": heads, "links": links, "_where": where,
+        }
+        return line
+
     for sid in ranked:
         s = stories[sid]
         mem = members(s)
@@ -1670,56 +1734,68 @@ def render(state, now, cmap, built):
             skip(s, "follow-up"); continue
         if any(hs is not s and len(hs["d"]) > len(s["d"]) and same_affair(s, hs, he) for hs, he in held):
             skip(s, "fragment of held"); continue
-        key, text, tags, ckeys = consensus(s, now)
-        if not key:
+        line = make_line(sid, s, mem, section, where)
+        if line is None:
             continue
-        if cmap and "claim" in tags and not s["f"]:
-            continue                                  # a remark nobody abroad picked up is not an event
-        heads, links = sources(s, ckeys, where, cmap)
-        all_titles = [t[0] for t in s["ti"].values() if not t[3]]
-        renowned = {}
-        for dom, t in s["ti"].items():
-            r = source_rank(dom, t[1])
-            if r < 999 and not t[3]:
-                renowned[t[0]] = min(r, renowned.get(t[0], 999))
-        shown, seen_w = [], set()
-        for t in sorted(all_titles, key=lambda t: (renowned.get(t, 999) == 999,
-                                                   -len(ckeys & {k for k, _ in tokenise(t)}))):
-            w = tuple(k for k, _ in tokenise(t))
-            if w not in seen_w and len(shown) < AI_HEADLINES:
-                seen_w.add(w)
-                shown.append(t)
-        # A small story gets a sentence only if it is not about a person (see names_ok).
-        need_p = max(2, math.ceil(0.2 * s["n"]))
-        persons = {k for e, c in s["e"].items() if e.startswith("P:") and c >= need_p
-                   for part in e[2:].split() for k, _ in tokenise(part)}
-        picks[sid] = (all_titles, shown, names_ok(s, now) or not has_person(s), ckeys, renowned, persons)
-        firsts = [v[0] for v in mem.values()]
-        lines.append({
-            "id": sid, "section": section, "key": key, "text": text, "tags": tags, "related": 0,
-            "score": round(score(s)[0], 1),
-            "outlets": len(mem),
-            "wordings": wordings(s, now - RANK_WINDOW),
-            "countries": countries(s),
-            "other_lang": len(s["f"]),
-            "new_hour": sum(1 for v in firsts if v > now - 4),
-            "prev_hour": sum(1 for v in firsts if now - 8 < v <= now - 4),
-            "spark": [sum(1 for v in firsts if v == now - 11 + i) for i in range(12)],
-            "first": iso(s["first"]),
-            "headlines": heads, "links": links, "_where": where,
-        })
+        lines.append(line)
         shown_stories.append((lines[-1], s, set(top_ents(s)[:3])))    # the event's three main names
         room[section] -= 1
         if where:
             per_country[where] += 1
             per_region[REGION_OF.get(where, "other")] += 1
-    lines.sort(key=lambda l: l["section"] != "new")               # new first; order within a section kept
+    # Ongoing crises: a war or disaster is covered every day, but in many small stories that never top
+    # the day's list. Their coverage is added up by country over the last days; the biggest crises not
+    # already on the page get a line with their largest story of the day.
+    today = time.strftime("%Y-%m-%d", time.gmtime(now * SLOT))
+    tally = state.setdefault("ongoing", {})
+    crisis_today = {}
+    for sid, s in stories.items():
+        where = event_country(s)
+        if not where or share(s, "T:crisis", CRISIS_WORDS | DEATH_WORDS) < 0.3 or s["e"].get("T:sport", 0) >= 0.3 * s["n"] \
+                or s["e"].get("T:celeb", 0) >= 0.4 * s["n"]:
+            continue
+        mem = members(s)
+        crisis_today.setdefault(where, []).append((score(s)[0], sid, len(mem)))
+    for where, items in crisis_today.items():
+        days = tally.setdefault(where, {})
+        days[today] = max(days.get(today, 0), sum(n for _, _, n in items))
+    keep = {time.strftime("%Y-%m-%d", time.gmtime((now - 96 * d) * SLOT)) for d in range(ONGOING_DAYS)}
+    for where in list(tally):
+        tally[where] = {d: n for d, n in tally[where].items() if d in keep}
+        if not tally[where]:
+            del tally[where]
+    on_page = {l["_where"] for l in lines if l.get("_where")}
+    shown_ids = {l["id"] for l in lines}
+    # A crisis is ongoing when it is covered on several days, or (while history is short) in several
+    # separate stories at once: wars and disasters come in many small reports, one-off events do not.
+    crises = sorted(((sum(d.values()), len(d), w) for w, d in tally.items()
+                     if w in crisis_today and (len(d) >= 3 or len(crisis_today[w]) >= ONGOING_STORIES)),
+                    reverse=True)
+    n_days = len({d for days in tally.values() for d in days})
+    added = 0
+    for total, covered, where in crises:
+        if added >= ONGOING_LINES + SPARE_LINES or total < ONGOING_MIN:
+            break
+        if where in on_page:
+            continue                                  # already on the page today
+        for _, sid, _ in sorted(crisis_today[where], reverse=True):
+            s = stories[sid]
+            mem = members(s)
+            if sid in shown_ids or len(mem) < MIN_OUTLETS or score(s)[0] < 2:
+                continue
+            line = make_line(sid, s, mem, "ongoing", where)
+            if line:
+                line["covered_days"] = covered
+                lines.append(line)
+                added += 1
+                break
+    lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2}[l["section"]])   # order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
     # Counted words are hard to read; a small story that got no sentence is left out.
     DIAG.setdefault("skipped", []).extend({"why": "no clear sentence", "score": l["score"], "line": l["key"] + ": " + l["text"]}
                                           for l in lines if not l["sentence"])
     lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
-    cap = {"new": NEW_LINES, "day": DAY_LINES}
+    cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES}
     kept, per_country, per_region = [], Counter(), Counter()
     for l in lines:                         # spares fill only gaps; caps count lines actually shown
         where = l.pop("_where", None)
@@ -1740,6 +1816,7 @@ def render(state, now, cmap, built):
         "data_until": iso(now),
         "day": time.strftime("%Y-%m-%d", time.gmtime(now * SLOT)),
         "history_hours": min(24, round((now - min([int(k) for k in state["arts"]] or [now]) + 1) / 4)),
+        "ongoing_days": n_days,
         "screened": {"outlets": len(state["dom"]), "articles": sum(state["arts"].values())},
         "note": NOTE,
         "lines": lines,

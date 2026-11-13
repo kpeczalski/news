@@ -187,7 +187,10 @@
     code.textContent = "";
     var found = false, section = null;
     var hours = data.history_hours || 24;
-    var SECTIONS = { "new": "// new in the last 3 hours", "day": "// last " + hours + " hours" };
+    var od = data.ongoing_days || 1;
+    var SECTIONS = { "new": "// new in the last 3 hours", "day": "// last " + hours + " hours",
+                     "ongoing": "// ongoing crises: covered in many stories" + (od > 1 ? " over " + od + " days" : " today") +
+                                ", not on the list above" };
     var legend = ", biggest first";
     (data.lines || []).forEach(function (l) {
       if (r && r.story === l.id) found = true;
