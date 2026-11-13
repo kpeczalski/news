@@ -711,6 +711,13 @@ class Writer(unittest.TestCase):
         st["last"] = 116
         self.assertEqual(B.render(st, 116, {}, 0)["history_hours"], 4)
 
+    def test_fallback_headline_drops_one_outlets_colour(self):
+        base = ["Chipco CEO quits after affair %s" % w for w in ("report", "probe", "claims", "inquiry", "review", "audit")]
+        coloured = "Chipco CEO quits amid spy scandal"
+        titles = base * 2 + [coloured] * 2 + ["Chipco CEO quits", "Chipco CEO quits as board meets"] * 2
+        keys = {"chipco", "ceo", "quit"}
+        self.assertNotEqual(B.common_headline(titles, keys, False, {coloured: 0}), coloured)
+
     def test_fallback_headline_is_checked_and_shown_in_digits(self):
         titles = ["Pope Leo visits his second home, Peru"] * 3 + ["Pope Leo returns to Peru"] * 2 + [
             "Pope Leo returns to Peru for visit", "Leo returns to Peru as pope", "Pope Leo visits Peru again",

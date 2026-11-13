@@ -186,7 +186,7 @@
     var found = false, section = null;
     var hours = data.history_hours || 24;
     var SECTIONS = { "new": "// new in the last 3 hours", "day": "// last " + hours + " hours" };
-    var legend = ", by world coverage  (outlets · new per hour)";
+    var legend = ", ranked by spread across countries  (outlets · new per hour)";
     (data.lines || []).forEach(function (l) {
       if (r && r.story === l.id) found = true;
       if (l.section && l.section !== section && SECTIONS[l.section]) {

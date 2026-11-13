@@ -2,6 +2,12 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 14:00
+After a review of the website (accuracy 4, selection 5, readability 7.5):
+- A real headline is used only if every word is common in the story (15% of wordings in big
+  stories), so one outlet's colour ("scandal", "worldwide") never reaches the page.
+- Header says the order is by spread across countries.
+
 ## 2026-11-13, 13:50
 - Fragments of one big event (the Microsoft outage was split over 15 stories) are merged before
   ranking; a name found everywhere (EU, a capital) no longer links stories.

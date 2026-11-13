@@ -1137,7 +1137,10 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             ranked.append(((len(named), -renowned.get(title, 999), n, text == title, -len(words)), text))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
-    support = 2 if len(set(titles)) >= 6 else 1
+    # Every word of a real headline must be common in the story: in two differently worded headlines,
+    # and in at least 15% of them in a big story, so one outlet's colour ("scandal", "worldwide") is dropped.
+    n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
+    support = 1 if n_wordings < 6 else max(2, math.ceil(0.15 * n_wordings))
     for _, title in sorted(ranked, reverse=True):
         plain = title.rstrip(".")
         if not check_sentence(plain, titles, must_negate, consensus_keys, False, counted,
