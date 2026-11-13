@@ -31,12 +31,24 @@ jobs:
             [ "$code" -eq 2 ] || exit "$code"     # 2 = no such branch: genuine first run
             mkdir prev
           fi
+      - name: Is the hosted model answering?
+        id: hosted
+        run: |
+          # When it is, the small local model (1.4 GB) is not loaded at all: less transfer and energy.
+          if [ -n "$LLM_API_KEY" ] && curl -fsS -m 10 -H "Authorization: Bearer $LLM_API_KEY" \
+               https://api.groq.com/openai/v1/models >/dev/null; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+          fi
       - name: Keep the model between runs
+        if: steps.hosted.outputs.ok != 'true'
         uses: actions/cache@v6
         with:
           path: models
           key: ollama-${{ env.AI_MODEL }}
       - name: Start the sentence writer
+        if: steps.hosted.outputs.ok != 'true'
         continue-on-error: true      # without it the page still builds, with headlines instead
         run: |
           curl -fsSL https://ollama.com/install.sh | sh >/dev/null
