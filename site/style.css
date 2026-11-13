@@ -77,7 +77,7 @@ ol.code > li::before { white-space: nowrap; }
 ol.code > li.new::before { content: "+" counter(ln); color: var(--up); }
 ol.code > li.note { counter-increment: none; }
 ol.code > li.note::before { content: ""; }
-ol.code > li.sec { padding-top: 14px; font-size: 13px; counter-reset: ln; }   /* each section numbered from 1 */
+ol.code > li.sec { padding-top: 14px; font-size: 13px; counter-set: ln 0; }   /* each section numbered from 1 */
 ol.code > li.sec:first-child { padding-top: 4px; }
 ol.code > li.target { background: var(--chrome); }
 ol.code > li > * { min-width: 0; overflow-wrap: anywhere; }
