@@ -13,3 +13,4 @@ readability 10.
 | 2026-11-13 13:35 | 4 | 5 | 7.5 | website, small model, 9 hours of history; before the 14:00 fixes |
 
 | 2026-11-13 12:25Z | accuracy 6 | selection 5 | readability 6.5 | before dropping counted-word lines |
+| 2026-11-13 12:50Z | accuracy 5 | selection 5 | readability 6.5 | 7 lines; Nvidia allegation on the line |

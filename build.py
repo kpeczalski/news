@@ -156,7 +156,7 @@ rips ripped destroys destroyed epic insane unbelievable incredible amazing horri
 devastating heartbreaking tragic chaos fury furious outrage outraged meltdown nightmare jaw-dropping
 exclusive urgent revealed finally massive huge emotional beloved dramatic iconic heartfelt historic
 stunned furious bizarre chilling brutal savage
-scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense quietly bluntly""".split())   # verdicts, not facts
+scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense quietly bluntly rekindles heartwarming""".split())   # verdicts, not facts
 
 NUMWORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7",
             "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12", "thirteen": "13",
@@ -1178,15 +1178,18 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             title_sc = title
         # The headline itself, and its opening up to the first add-on ("... as 3 million expected").
         cut = re.search(CLAUSE, title_sc)
-        if cut and set(raw_words(title_sc[cut.end():])) & (HEDGE | {"according"}):
-            cut = None                                # never cut off an attribution
+        if cut and set(raw_words(title_sc[cut.end():])) & {"says", "said", "say", "saying", "according",
+                                                           "claims", "claim", "reportedly", "report", "reports"}:
+            cut = None                                # never cut off who says the main clause
+        # (an allegation in the add-on itself, "... amid alleged affair", may be cut off whole)
         for text in {title_sc, title_sc[:cut.start()].strip() if cut else title_sc}:
             words = text.split()
             alpha = [w for w in words if w[:1].isalpha()]
             if not 4 <= len(words) <= AI_WORDS + 2 or re.search(r"[?!:;|]", text):
                 continue
-            if claim and not set(raw_words(text)) & (HEDGE | {"according", "reports", "report"}):
-                continue                              # a claim is only shown with its attribution
+            if claim and not set(raw_words(text)) & (HEDGE | {"according", "reports", "report"}) \
+                    and not (text != title_sc and set(raw_words(title_sc[len(text):])) & HEDGE):
+                continue                              # a claim is shown with its attribution, or cut off whole
             if len(alpha) >= 4 and not any(len(w) > 3 and w.islower() for w in alpha):
                 continue                              # Title Case Reads As Shouting (no plain word left)
             named = {k for _, k, _ in scan(text)} & set(consensus_keys)
@@ -1196,7 +1199,10 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             # which trims agency add-ons ("..., related events in Shenzhen").
             enough = len(named) >= max(2, math.ceil(0.5 * len(set(consensus_keys))))
             fits = len(text) <= ONE_LINE                 # fits on one line of the page
-            ranked.append(((enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
+            rw = set(raw_words(text))
+            accuses = bool(set(persons) & rw and rw & WRONGDOING)   # a named person tied to wrongdoing
+            amid = bool(re.search(r"\bamid\b", text, re.I))   # background added to the event
+            ranked.append(((not accuses, not amid, enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
@@ -1257,9 +1263,7 @@ def add_sentences(state, lines, picks, started):
                 if set(raw_words(picked)) & HEDGE and "claim" not in l["tags"]:
                     l["tags"].insert(0, "claim")
                 l["sentence"] = digits(picked)
-                hedged = set(raw_words(picked)) & (SPEECH | QUALIFIER | {"allegation", "allegations"})
-                if "claim" in l["tags"] and not hedged:
-                    l["sentence"] = "Reports: " + l["sentence"]
+                # No "Reports:" here: a claim's headline keeps its attribution, or was cut before the claim.
                 l["show_tags"] = [t for t in l["tags"] if t != "claim"]
                 continue
         hit = cache.get(l["id"])

@@ -729,7 +729,8 @@ class Writer(unittest.TestCase):
         other = "Chipco CEO Jensen Example steps down amid alleged spy scandal"
         titles = [other] * 9 + [main] * 4 + ["Chipco CEO resigns over alleged affair", "Jensen Example resigns from Chipco"]
         keys = {"chipco", "ceo", "jensen", "example", "resign", "affair"}
-        self.assertEqual(B.common_headline(titles, keys, False, {other: 0}), main)
+        # The core fact is shown; the allegation about the named person is left to the opened line.
+        self.assertEqual(B.common_headline(titles, keys, False, {other: 0}), "Chipco CEO Jensen Example steps down")
 
     def test_fallback_can_use_the_opening_of_a_headline(self):
         titles = ["Pope returns home to Peru as 3 million expected at Lima Mass"] * 3 + [

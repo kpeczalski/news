@@ -200,3 +200,8 @@ After an independent grade of the live page (5 out of 10):
 - Country and region caps count only lines actually shown.
 - Lines that fit on one line (80 characters) are preferred; the page window is wider (880 px).
 - "quietly", "bluntly" refused. diag.json lists why candidates were left off.
+
+## 2026-11-13, 15:20 (Helsinki)
+- Review: accuracy 5, selection 5, readability 6.5. Main point: a named person tied to an allegation on the front line.
+- A headline's "amid ..." add-on, or an allegation about a named person, is cut off when the core fact alone passes ("Nvidia CEO Jensen Huang resigns"). The full headlines stay in the opened line.
+- "rekindles", "heartwarming" refused.
