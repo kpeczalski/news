@@ -24,3 +24,5 @@
 # A question is not a report.
 \?\s*$
 \b(sandpaper\w*|ball-tampering|wickets?|innings|batsm[ae]n|bowlers?|cricketers?)\b
+\b(fires|hits|lashes|snaps|claps) back\b
+\b(ashes|test match|odi|t20|ipl|sheffield shield|baggy green)\b

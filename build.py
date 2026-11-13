@@ -155,7 +155,7 @@ rips ripped destroys destroyed epic insane unbelievable incredible amazing horri
 devastating heartbreaking tragic chaos fury furious outrage outraged meltdown nightmare jaw-dropping
 exclusive urgent revealed finally massive huge emotional beloved dramatic iconic heartfelt historic
 stunned furious bizarre chilling brutal savage
-scandal scandals disgraced disgrace shamed notorious infamous embattled""".split())   # verdicts, not facts
+scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense""".split())   # verdicts, not facts
 
 NUMWORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7",
             "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12", "thirteen": "13",
