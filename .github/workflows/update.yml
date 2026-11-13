@@ -18,6 +18,7 @@ jobs:
       REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
       AI_MODEL: qwen3:1.7b          # small model on the server's processor; only for stories no headline fits
       AI_TRIES: "3"
+      LLM_API_KEY: ${{ secrets.LLM_API_KEY }}   # free hosted model (Groq); the small model stays as fallback
       OLLAMA_MODELS: ${{ github.workspace }}/models
     steps:
       - name: Get the code and the previous output

@@ -956,10 +956,37 @@ def ollama(path, payload=None, timeout=60):
         return json.loads(r.read().decode("utf-8", "replace"))
 
 
+API_KEY = os.environ.get("LLM_API_KEY", "")                # a free hosted model (Groq); local model if unset or down
+API_URL = os.environ.get("LLM_API_URL", "https://api.groq.com/openai/v1")
+API_MODEL = os.environ.get("LLM_API_MODEL", "llama-3.3-70b-versatile")
+API_STATE = {"local": None, "failed": 0}
+
+
+def api(path, payload=None, timeout=30):
+    data = json.dumps(payload).encode() if payload is not None else None
+    req = urllib.request.Request(API_URL + path, data=data, headers={
+        "Content-Type": "application/json", "Authorization": "Bearer " + API_KEY, "User-Agent": "news/1.0"})
+    with urllib.request.urlopen(req, timeout=timeout) as r:
+        return json.loads(r.read().decode("utf-8", "replace"))
+
+
 def pick_model():
-    """Name of the local model to use, or None when the writer is off or Ollama is not running."""
+    """The hosted model when a key is set and it answers; otherwise the local model, or None."""
     if AI == "off":
         return None
+    API_STATE["local"] = local_model()
+    if API_KEY:
+        try:
+            ids = [m.get("id", "") for m in api("/models", timeout=10).get("data", [])]
+            if API_MODEL in ids:
+                return "api:" + API_MODEL
+            log("hosted model not offered:", API_MODEL, "available:", ", ".join(sorted(ids))[:400])
+        except Exception as e:
+            log("hosted model unavailable:", repr(e)[:200])
+    return API_STATE["local"]
+
+
+def local_model():
     try:
         names = [m.get("name", "") for m in ollama("/api/tags", timeout=5).get("models", [])]
     except Exception:
@@ -973,13 +1000,31 @@ def pick_model():
 
 
 def write_sentence(model, headlines, extra=""):
+    if model and model.startswith("api:"):
+        if API_STATE["failed"] < 3:
+            try:
+                out = api("/chat/completions", timeout=30, payload={
+                    "model": model[4:], "temperature": 0, "max_tokens": 60,
+                    "messages": [{"role": "system", "content": AI_PROMPT + extra},
+                                 {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)}]})
+                text = ((out.get("choices") or [{}])[0].get("message") or {}).get("content", "")
+                return clean_reply(text)
+            except Exception as e:
+                API_STATE["failed"] += 1                  # rate limit or outage: the local model takes over
+                log("hosted model call failed:", repr(e)[:200])
+        model = API_STATE["local"]
+        if not model:
+            return ""
     out = ollama("/api/chat", timeout=40, payload={
         "model": model, "stream": False, "think": False,
         "options": {"temperature": 0, "num_predict": 60},
         "messages": [{"role": "system", "content": AI_PROMPT + extra},
                      {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)}],
     })
-    text = (out.get("message") or {}).get("content", "")
+    return clean_reply((out.get("message") or {}).get("content", ""))
+
+
+def clean_reply(text):
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.S).strip()
     text = text.split("\n")[0].strip().strip("\"'“”‘’ ").rstrip(".").strip()
     return re.sub(r"\s+", " ", text)

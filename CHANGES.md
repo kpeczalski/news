@@ -205,3 +205,6 @@ After an independent grade of the live page (5 out of 10):
 - Review: accuracy 5, selection 5, readability 6.5. Main point: a named person tied to an allegation on the front line.
 - A headline's "amid ..." add-on, or an allegation about a named person, is cut off when the core fact alone passes ("Nvidia CEO Jensen Huang resigns"). The full headlines stay in the opened line.
 - "rekindles", "heartwarming" refused.
+
+## 2026-11-13, 15:10 (Helsinki)
+- Bigger model: Llama 3.3 70B on Groq's free tier writes the sentence when no headline fits (key in the LLM_API_KEY secret). Falls back to the local qwen3:1.7b after 3 failed calls, or when the key is missing.

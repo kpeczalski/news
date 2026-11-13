@@ -29,7 +29,7 @@
 
     <h2>Who writes the sentence</h2>
     <ul>
-      <li>A small open-source language model (qwen3), run by the program itself, can turn a story's headlines into one sentence of at most 12 words. Nothing is sent to an AI company.</li>
+      <li>When no printed headline passes, an open-source language model (Llama 3.3 70B, on Groq's free service) turns the story's headlines into one sentence of at most 12 words. Only public headlines are sent. If that service is down, a small open-source model (qwen3) run by the program itself takes over.</li>
       <li>The model only rewords. It does not pick stories, rank them or set labels. First the program looks for a real headline that passes every check below and uses it as printed; the model writes a sentence only when no headline does.</li>
       <li>Every sentence is checked by fixed rules before it is shown:
         <ul>
