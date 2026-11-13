@@ -1361,12 +1361,12 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
         if n < 2 and title not in renowned and n_wordings < 6:
             continue                                  # in a big story every word is checked against many
         words0 = title.split()
-        if len(words0) >= 4 and not any(len(w) > 3 and w.islower() for w in words0):
-            title_sc = " ".join(w if i == 0 or not w[:1].isupper() or w[1:2].isupper()
-                                or w.lower().strip(".,'\"") not in lower_seen | small else w.lower()
-                                for i, w in enumerate(words0))
-        else:
-            title_sc = title
+        # Sentence case: a capitalised word that other headlines print in lower case is lowered
+        # (Title Case, or a stray capital as in "Russia Claims drone Attack"); names stay.
+        title_case = len(words0) >= 4 and not any(len(w) > 3 and w.islower() for w in words0)
+        title_sc = " ".join(w if i == 0 or not w[:1].isupper() or w[1:2].isupper()
+                            or w.lower().strip(".,'\"") not in (lower_seen | small if title_case else lower_seen)
+                            else w.lower() for i, w in enumerate(words0))
         # The headline itself, and its opening up to the first add-on ("... as 3 million expected").
         cut = re.search(CLAUSE, title_sc)
         if cut and set(raw_words(title_sc[cut.end():])) & {"says", "said", "say", "saying", "according",
