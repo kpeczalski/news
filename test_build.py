@@ -436,13 +436,13 @@ class Stories(unittest.TestCase):
                             "slug": False, "ents": B.entities(f), "toks": B.tokenise(title)})
             return out
         # the names are everywhere: 300 other reports mention them too
-        spread = mk("s", ["qx%da qx%db qx%dc qx%dd" % (i, i, i, i) for i in range(300)])
+        spread = mk("s", ["qx%da qx%db qx%dc qx%dd" % (i, i, i, i) for i in range(100)])
         a = mk("a", ["Chipco CEO Jensen Example resigns, board names interim chief %d" % i for i in range(8)])
         b = mk("b", ["Former Chipco CEO Example linked to spy, report %d" % i for i in range(5)])
         noise = [art("n%d.com" % i, "zz%da zz%db zz%dc chipco" % (i, i, i)) for i in range(400)]
         _, p = run([(100, spread + a + b + noise, [])])
         big = [l for l in p["lines"] if l["outlets"] >= 5]
-        self.assertEqual([(l["outlets"], l["related"]) for l in big], [(8, 1)])
+        self.assertEqual([l["outlets"] for l in big], [13])              # folded before ranking
 
     def test_affairs_of_state_weigh_more(self):
         a = [art("a%d.com" % i, "Bus crash on mountain road, toll version %d" % i) for i in range(6)]

@@ -2,6 +2,11 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 13:50
+- Fragments of one big event (the Microsoft outage was split over 15 stories) are merged before
+  ranking; a name found everywhere (EU, a capital) no longer links stories.
+- No "Reports:" prefix when the line already hedges ("alleged", "suspected").
+
 ## 2026-11-13, 13:35
 - "allegations of" / "reports of" count as a kept qualifier; small stories left as counted words
   are not listed.

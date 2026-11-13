@@ -1333,6 +1333,31 @@ def render(state, now, cmap, built):
             return True
         return spread_of(s) >= MIN_SPREAD or len(s["f"]) >= MIN_OTHER_LANG
 
+    def same_affair(small, big, big_names):
+        """A smaller story belongs to a bigger one when it carries two of the bigger story's three
+        main names and those names belong to the pair: either both are uncommon elsewhere, or one
+        of them occurs in these two stories more than everywhere else together (a place such as
+        "Logan Circle" next to a common one such as "Washington")."""
+        shared = set(top_ents(small)) & big_names
+        if not shared:
+            return False
+        if len(shared) >= 2 and (sum(1 for e in shared if rare_entity(state, small, e, big, slack=3)) >= 2
+                                 or any(rare_entity(state, small, e, big) for e in shared)):
+            return True
+        if not any(rare_entity(state, small, e, big, slack=10) for e in shared):
+            return False                          # a name found everywhere (EU, a capital) links nothing
+        # A big event spreads its names over so many reports that none looks rare. Then a shared
+        # main name plus two shared distinctive words ("nvidia", "huang"; "microsoft", "outage") is enough.
+        # A word is distinctive here when at least a fifth of all its uses are in these two stories.
+        rare_words = {k for k in set(top_tokens(small)[:8]) & set(top_tokens(big)[:8])
+                      if not is_num(k) and state["df"].get(k, 0) <= 5 * (small["t"].get(k, 0) + big["t"].get(k, 0))}
+        if len(rare_words) >= 2:
+            return True
+        # Or two shared names plus one distinctive word that is not itself part of those names
+        # ("Microsoft" + "Exchange Online" + "outage"; but "Gaza" + "Rafah" + "gaza" is not enough).
+        name_words = {k for e in shared for p in e[2:].split() for k, _ in tokenise(p)}
+        return len(shared) >= 2 and bool(rare_words - name_words)
+
     def same_event(a, b):
         ta, tb = set(top_tokens(a)), set(top_tokens(b))
         if not ta or not tb:
@@ -1342,12 +1367,12 @@ def render(state, now, cmap, built):
             return True
         ea, eb = set(top_ents(a)), set(top_ents(b))
         shared, small = ea & eb, min(len(ea), len(eb))
-        if small < 2 or inter < 2 or len(shared) < max(2, math.ceil(0.5 * small)):
-            return False
-        # Either two names that belong to these stories, or four shared names and three shared
-        # words (a big event's names are spread over so many reports that none looks rare).
-        return (sum(1 for e in shared if rare_entity(state, a, e, b)) >= 2
-                or (len(shared) >= 4 and inter >= 3))
+        if not (small < 2 or inter < 2 or len(shared) < max(2, math.ceil(0.5 * small))):
+            # Two names that belong to these stories, or four shared names and three shared words.
+            if (sum(1 for e in shared if rare_entity(state, a, e, b)) >= 2
+                    or (len(shared) >= 4 and inter >= 3)):
+                return True
+        return same_affair(b, a, set(top_ents(a)[:3]))      # fragments of one big event
 
     # Cheap pre-rank by size, then fold fragments of one event among the leaders, then exact rank.
     pre = sorted(stories, key=lambda sid: -len(stories[sid]["d"]))[:150]
@@ -1380,29 +1405,6 @@ def render(state, now, cmap, built):
     held = [(stories[sid], set(top_ents(stories[sid])[:3])) for sid in pre
             if sid in stories and len(stories[sid]["d"]) >= MIN_OUTLETS
             and (domestic(stories[sid]) or not worldwide_enough(stories[sid]))]
-    def same_affair(small, big, big_names):
-        """A smaller story belongs to a bigger one when it carries two of the bigger story's three
-        main names and those names belong to the pair: either both are uncommon elsewhere, or one
-        of them occurs in these two stories more than everywhere else together (a place such as
-        "Logan Circle" next to a common one such as "Washington")."""
-        shared = set(top_ents(small)) & big_names
-        if not shared:
-            return False
-        if len(shared) >= 2 and (sum(1 for e in shared if rare_entity(state, small, e, big, slack=3)) >= 2
-                                 or any(rare_entity(state, small, e, big) for e in shared)):
-            return True
-        # A big event spreads its names over so many reports that none looks rare. Then a shared
-        # main name plus two shared distinctive words ("nvidia", "huang"; "microsoft", "outage") is enough.
-        # A word is distinctive here when at least a third of all its uses are in these two stories.
-        rare_words = {k for k in set(top_tokens(small)[:8]) & set(top_tokens(big)[:8])
-                      if not is_num(k) and state["df"].get(k, 0) <= 3 * (small["t"].get(k, 0) + big["t"].get(k, 0))}
-        if len(rare_words) >= 2:
-            return True
-        # Or two shared names plus one distinctive word that is not itself part of those names
-        # ("Microsoft" + "Exchange Online" + "outage"; but "Gaza" + "Rafah" + "gaza" is not enough).
-        name_words = {k for e in shared for p in e[2:].split() for k, _ in tokenise(p)}
-        return len(shared) >= 2 and bool(rare_words - name_words)
-
     lines, picks, shown_stories = [], {}, []
     room = {"new": NEW_LINES, "day": DAY_LINES}
     per_country = Counter()
