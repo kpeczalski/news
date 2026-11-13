@@ -1105,5 +1105,14 @@ class SportTag(unittest.TestCase):
         self.assertTrue(B.SPORT_THEME.search("SPORTS;TAX_SPORTS_FOOTBALL"))
 
 
+class Direction(unittest.TestCase):
+    def test_who_attacked_whom(self):
+        S = B.SIDES["Russia–Ukraine war"]
+        self.assertEqual(B.direction("Russia launches massive overnight attacks on Ukraine", S), 1)
+        self.assertEqual(B.direction("Ukrainian strikes kill 9 in Russia", S), -1)
+        self.assertEqual(B.direction("Ukraine launches nearly 1,200 drones at Russia", S), -1)
+        self.assertEqual(B.direction("Russia shoots down 1,198 drones in one of Ukraine's largest attacks", S), -1)
+
+
 if __name__ == "__main__":
     unittest.main()

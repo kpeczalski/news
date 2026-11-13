@@ -1375,6 +1375,44 @@ def toll(titles):
     return med(dead), med(hurt)
 
 
+# The two sides of a conflict, as headlines name them, to tell who attacked whom.
+SIDES = {
+    "Russia–Ukraine war": ({"russia", "russian", "russians", "moscow", "kremlin"},
+                           {"ukraine", "ukrainian", "ukrainians", "kyiv", "kiev", "zelensky"}),
+    "Israel and the Palestinian territories": ({"israel", "israeli", "idf"},
+                                               {"gaza", "hamas", "palestinian", "palestinians"}),
+}
+ACT_WORDS = set("""attack attacks attacked launches launched launch strike strikes struck hits hit fires fired
+shells shelled bombs bombed pounds raid raids drones drone missiles missile barrage kills killed kill""".split())
+
+
+DEFEND = {"downs", "downed", "intercepts", "intercepted", "repels", "repelled", "shoots", "shot", "destroys",
+          "destroyed", "repel", "intercept"}
+
+
+def direction(title, sides):
+    """+1 when the first side acts on the second ("Russia launches drones at Ukraine"), -1 for the
+    reverse, 0 when the headline does not say. The side named before the first action word acts."""
+    words = [w.lower().strip(".,:;'\"’‘()") for w in title.replace("’s", "").replace("'s", "").split()]
+    words = [w[:-2] if w.endswith("'s") else w for w in words]
+    act = next((i for i, w in enumerate(words) if w in ACT_WORDS), None)
+    if act is None:
+        return 0
+    if set(words[:act + 1]) & DEFEND:                 # "Russia shoots down Ukraine's drones": Ukraine acted
+        return -direction(" ".join(w for w in words if w not in DEFEND and w != "down"), sides)
+    before, after = set(words[:act]), set(words[act + 1:])
+    a, b = sides
+    if before & a and not before & b and after & b:
+        return 1
+    if before & b and not before & a and after & a:
+        return -1
+    if before & a and not before & b:
+        return 1 if not after & a else 0
+    if before & b and not before & a:
+        return -1 if not after & b else 0
+    return 0
+
+
 def digits(text):
     """Spell numbers as digits for display: "two children and six adults" -> "2 children and 6 adults"."""
     text = re.sub(r"\bU\.S\.(?=\s|$)", "US", text)
@@ -1938,6 +1976,21 @@ def render(state, now, cmap, built):
                 added += 1
     lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2}[l["section"]])   # order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
+    # Who attacked whom must match the headlines. A story whose headlines point both ways is two
+    # events merged and is left off; a line pointing the other way from most headlines is dropped
+    # (the conflict's next event takes its place).
+    for l in lines:
+        sides = SIDES.get(l.get("_where"))
+        if l["section"] != "ongoing" or not sides or not l["sentence"]:
+            continue
+        dirs = [direction(t, sides) for t in picks[l["id"]][0]]
+        fwd, back = dirs.count(1), dirs.count(-1)
+        mine = direction(l["sentence"], sides)
+        if (fwd and back and min(fwd, back) >= 0.3 * (fwd + back)) or \
+                (mine and (fwd or back) and mine != (1 if fwd > back else -1)):
+            DIAG.setdefault("skipped", []).append({"why": "direction unclear or inverted", "line": l["sentence"],
+                                                   "forward": fwd, "back": back})
+            l["sentence"] = ""
     # Counted words are hard to read; a small story that got no sentence is left out.
     DIAG.setdefault("skipped", []).extend({"why": "no clear sentence", "score": l["score"], "line": l["key"] + ": " + l["text"]}
                                           for l in lines if not l["sentence"])

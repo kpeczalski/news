@@ -240,3 +240,4 @@ After an independent grade of the live page (5 out of 10):
 - Fix: "TRANSPORT" no longer matches the sport tag (it hid a Russian attack on Ukraine as sport). "attack(s)" count as crisis words again. A crisis falls back to its next event when the first gets no clear line; one line per conflict.
 - Crises order: recency (halves after 6 h) x toll (log scale) x reliability (one-side claims half, 2 papers of record +20%). No line numbers on the page (user).
 - Crises: an event with no reported toll weighs like ~9 killed (not zero), so a large attack still unfolding is not ranked last.
+- Crisis lines: who attacked whom is checked against the headlines (Russia/Ukraine, Israel/Gaza); a story whose headlines point both ways (two events merged) is left off, a line pointing the other way is dropped; "shoots down/intercepts" reverses the actor.

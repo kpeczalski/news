@@ -14,7 +14,7 @@
    ~9 killed); a toll only one side claims counts half; two papers of record add 20%.
    Example kept as a check: a large Russian attack on Ukraine with no toll yet ranks above a
    one-sided military claim of militants killed.
-6. A crisis line says who did what ("Ukrainian strikes kill 9 in Russia"), not who says it,
+6. A crisis line says who did what (checked against the headlines; mixed-direction stories are left off) ("Ukrainian strikes kill 9 in Russia"), not who says it,
    when most headlines state the event as fact. Never invert who attacked whom.
 7. Sources when a line is opened: the event country's papers of record first (not for
    state-controlled press), then international papers of record, agencies, broadcasters.
