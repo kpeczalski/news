@@ -1340,6 +1340,32 @@ def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False
 NUM_DISPLAY = {w: d for w, d in NUMWORDS.items() if w != "one"}      # "one" is too often a pronoun
 
 
+TOLL_RE = re.compile(r"\b(\d[\d,]*)(?:\s*[-–]\s*\d[\d,]*)?\s+(?:[A-Za-z'-]+\s+){0,3}?"
+                     r"(dead|killed|deaths|die|died|injured|wounded|hurt|casualties)\b"
+                     r"|\b(kills?|killing|injures?|wounds?)\s+(?:at least\s+)?(\d[\d,]*)", re.I)
+
+
+def toll(titles):
+    """(killed, injured) as most headlines that give a number state it: the median of each
+    headline's figure, the lower end of a range. (0, 0) when no headline gives one."""
+    dead, hurt = [], []
+    for t in titles:
+        d = h = 0
+        for m in TOLL_RE.finditer(digits(t)):
+            n = int((m.group(1) or m.group(4)).replace(",", ""))
+            word = (m.group(2) or m.group(3)).lower()
+            if word.startswith(("injur", "wound", "hurt")):
+                h = max(h, n)
+            else:
+                d = max(d, n)
+        if d:
+            dead.append(d)
+        if h:
+            hurt.append(h)
+    med = lambda v: sorted(v)[len(v) // 2] if v else 0
+    return med(dead), med(hurt)
+
+
 def digits(text):
     """Spell numbers as digits for display: "two children and six adults" -> "2 children and 6 adults"."""
     text = re.sub(r"\bU\.S\.(?=\s|$)", "US", text)
@@ -1852,12 +1878,18 @@ def render(state, now, cmap, built):
         crisis, total = sum(v[0] for v in d.values()), sum(v[1] for v in d.values())
         days_on = sum(1 for v in d.values() if v[0] >= 8)
         ongoing = min(1.0, days_on / ONGOING_DAYS) * min(1.0, 3 * crisis / max(1, total))
-        best, sid, _ = max(items)
-        if best < 4 or (not worldwide_enough(stories[sid]) and days_on < 3):
+        # Within a crisis, the event with the highest human toll; among equal tolls, the most covered.
+        def rank(item):
+            st = stories[item[1]]
+            return toll([t[0] for t in st["ti"].values()]) + (item[0],)
+        best, sid, _ = max((it for it in items if it[0] >= 4), key=rank, default=(0, None, 0))
+        if sid is None or (not worldwide_enough(stories[sid]) and days_on < 3):
             continue                                  # a local accident is not a world crisis
         if w not in CONFLICTS and countries(stories[sid]) < BIG_DISASTER_COUNTRIES:
             continue                                  # outside known wars, only what the world covers
-        crises.append((best * (1 + ongoing), sid, w, days_on))
+        k, h = toll([t[0] for t in stories[sid]["ti"].values()])
+        crises.append(((k, h, stories[sid]["first"]), sid, w, days_on))
+    # Human toll first (people killed, then injured, as the headlines state it); then the latest.
     crises.sort(reverse=True)
     added = 0
     for _, sid, where, days_on in crises:
@@ -1869,6 +1901,7 @@ def render(state, now, cmap, built):
         line = make_line(sid, s, members(s), "ongoing", where)
         if line:
             line["covered_days"] = days_on
+            line["toll"] = list(toll([t[0] for t in s["ti"].values()]))
             lines.append(line)
             added += 1
     lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2}[l["section"]])   # order within a section kept

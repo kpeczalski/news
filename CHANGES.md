@@ -230,3 +230,4 @@ After an independent grade of the live page (5 out of 10):
 - Most covered needs score 12 (was 8): drops niche business filler.
 - Accidents (collapse, crash, fire, capsizing) count as crises only when covered in 20+ countries.
 - Crises limited to known armed conflicts (17, from the list of ongoing wars, incl. the Iran war) plus disasters/attacks covered in 20+ countries; lines labelled with the conflict name.
+- Crises ordered by human toll from the headlines (killed, then injured, median across headlines), then latest; not by coverage (user).

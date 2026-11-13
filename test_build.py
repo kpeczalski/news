@@ -1092,5 +1092,12 @@ class Wires(unittest.TestCase):
         self.assertEqual(heads[0]["d"], "nytimes.com")
 
 
+class Toll(unittest.TestCase):
+    def test_toll_from_headlines(self):
+        self.assertEqual(B.toll(["Strike on hospital kills 6", "Six dead, 12 injured in strike", "Hospital hit"]), (6, 12))
+        self.assertEqual(B.toll(["Leaders meet in Dublin"]), (0, 0))
+        self.assertEqual(B.toll(["Quake leaves 1,200 dead", "Quake kills 1,200"]), (1200, 0))
+
+
 if __name__ == "__main__":
     unittest.main()
