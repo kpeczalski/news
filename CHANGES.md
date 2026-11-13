@@ -212,3 +212,6 @@ After an independent grade of the live page (5 out of 10):
 
 ## 2026-11-13, 15:40 (Helsinki)
 - Learning loop: every sentence the big model writes that passes all checks (and every accepted headline) is kept as an example (last 300, in state). When the small fallback model writes, it is shown the 3 most similar examples first. examples.jsonl is published as a training set for a later fine-tune.
+
+## 2026-11-13, 17:00 (Helsinki)
+- Readability: headlines in a plain reading font (the window, numbers and notes stay monospace); line labels simplified to "N countries" plus "rising"; counted words no longer shown when a line is opened.
