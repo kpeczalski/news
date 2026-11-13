@@ -51,7 +51,7 @@ VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".spli
 # Known armed conflicts (from the list of ongoing wars with 1,000+ deaths a year; check it now and
 # then). Countries of one conflict count as one crisis: one line, history added together.
 CONFLICTS = {
-    "Russia–Ukraine war": "RS UP", "Israel–Gaza war": "IS GZ WE", "Iran war": "IR", "Lebanon": "LE",
+    "Russia–Ukraine war": "RS UP", "Israel and the Palestinian territories": "IS GZ WE", "Iran war": "IR", "Lebanon": "LE",
     "Sudan war": "SU OD", "Myanmar civil war": "BM", "DR Congo conflict": "CG", "Ethiopia conflict": "ET",
     "Somalia conflict": "SO", "Sahel insurgency": "ML UV NG", "Nigeria conflict": "NI", "Yemen war": "YM",
     "Syria conflict": "SY", "Afghanistan and Pakistan insurgencies": "AF PK", "Mexico drug war": "MX",
@@ -1869,8 +1869,6 @@ def render(state, now, cmap, built):
         line = make_line(sid, s, members(s), "ongoing", where)
         if line:
             line["covered_days"] = days_on
-            if where in CONFLICTS:
-                line["conflict"] = where
             lines.append(line)
             added += 1
     lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2}[l["section"]])   # order within a section kept
