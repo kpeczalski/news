@@ -1981,6 +1981,17 @@ def render(state, now, cmap, built):
     # events merged and is left off; a line pointing the other way from most headlines is dropped
     # (the conflict's next event takes its place).
     for l in lines:
+        # A crisis line keeps the toll most headlines give: a line without it is replaced by a real
+        # headline that states it, when one passes the checks.
+        if l["section"] == "ongoing" and l["sentence"] and not TOLL_RE.search(digits(l["sentence"])):
+            titles, _, _, ckeys, renowned, persons = picks[l["id"]]
+            k, h = toll(titles)
+            if (k, h) != (0, 0):
+                # the toll most headlines give counts as a counted number here
+                counted = l["text"] + "".join(" %d" % n for n in (k, h) if n)
+                alt = common_headline(titles, ckeys, False, renowned, counted, False, persons, True)
+                if alt and TOLL_RE.search(digits(alt)):
+                    l["sentence"], l["by"] = digits(alt), "headline"
         sides = SIDES.get(l.get("_where"))
         if l["section"] != "ongoing" or not sides or not l["sentence"]:
             continue
