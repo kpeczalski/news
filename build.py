@@ -41,6 +41,28 @@ MIN_OTHER_LANG = 3                            # ...or this many outlets in other
 NO_OTHER_LANG = 0.6                           # a story no outlet in another language carries keeps this share
 DOMESTIC_KEEP = 50                            # domestic news is listed only if this many outlets in other languages carry it
 PER_COUNTRY = 2                               # at most this many lines about events in one country
+PER_REGION = 3                                # and at most this many about one world region
+# Regions by GDELT (FIPS) country code; anything not listed counts as "other".
+REGIONS = {
+    "americas": "US CA MX BR AR CI CO PE VE EC BO UY PA GT HO CS CU DR HA JM".split(),
+    "europe": "UK EI FR GM IT SP PO NL BE LU SZ AU DA NO SW FI IC EZ LO PL HU RO BU GR UP RS BO MD LH LG EN HR SI BK MK AL MJ RI".split(),
+    "mideast_africa": "IS WE GZ LE SY IZ IR SA AE KU QA BA MU YM JO EG LY TS AG MO SU OD ET SO KE UG TZ RW CG NI GH SF ZI AO SG ML NG".split(),
+    "asia_pacific": "CH JA KS KN TW HK IN PK BG CE NP AF ID MY SN RP TH VM BM CB LA AS NZ MG KZ UZ".split(),
+}
+REGION_OF = {c: r for r, cs in REGIONS.items() for c in cs}
+# Spellings that differ between languages and transliterations, folded to one name for matching.
+ALIASES = {"kiev": "kyiv", "kiew": "kyiv", "kijev": "kyiv", "peking": "beijing", "bombay": "mumbai",
+           "calcutta": "kolkata", "rangoon": "yangon", "burma": "myanmar", "ivory coast": "cote divoire",
+           "zelenskiy": "zelensky", "zelenskyy": "zelensky", "selenskyj": "zelensky", "putin wladimir": "vladimir putin",
+           "kharkov": "kharkiv", "odessa": "odesa", "gaza strip": "gaza", "north korea": "korea north"}
+# Words that tie a person to wrongdoing. A line using one about a named person must say who
+# says so, or keep a qualifier ("alleged", "accused", "charged", "denies").
+WRONGDOING = set("""spy spying espionage affair fraud corruption corrupt bribe bribery abuse abused assault
+harassment rape murder murdered killer theft stole stolen scam embezzlement misconduct lied lying
+cheated cheating treason traitor terrorist extremist racist""".split())
+ATTRIBUTED = set("""says said say claims claim claimed according alleged allegedly allegation allegations
+accused accuses accusation accusations charged charges denies denied suspected reportedly probe
+investigation investigated sources""".split())
 STATE_BOOST = 1.5                             # affairs of state weigh more than accidents and crime
 STATE_WORDS = set("""president presidential minister premier chancellor parliament government election elected
 coup impeach sanction tariff ceasefire truce treaty summit envoy talks
@@ -72,7 +94,7 @@ AI_TRIES = int(os.environ.get("AI_TRIES", "4"))             # attempts per story
 AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 25                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 26                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -404,20 +426,24 @@ def latest_slot(name):
 SPORT_THEME = re.compile(r"SPORT|ATHLET|_PLAYER|FOOTBALL|SOCCER|CRICKET|OLYMPIC", re.I)
 
 
+def alias(name):
+    return ALIASES.get(name, name)
+
+
 def entities(f):
     ents = set()
     if SPORT_THEME.search(f[7] or "") or SPORT_THEME.search(f[8] or ""):
         ents.add("T:sport")                           # GDELT's own topic tags mark it as sport
     for p in f[11].split(";")[:15]:
         if p.strip():
-            ents.add("P:" + p.strip().lower())
+            ents.add("P:" + alias(p.strip().lower()))
     for o in f[13].split(";")[:10]:
         if o.strip():
             ents.add("O:" + o.strip().lower())
     for block in f[9].split(";")[:10]:
         parts = block.split("#")
         if len(parts) > 1 and parts[1]:
-            name = parts[1].split(",")[0].strip().lower()
+            name = alias(parts[1].split(",")[0].strip().lower())
             ents.add(("C:" if parts[0] == "1" else "L:") + name)
             if len(parts) > 2 and parts[2].strip():
                 ents.add("K:" + parts[2].strip().upper())       # country code of the place
@@ -969,7 +995,7 @@ CLAUSE = r",\s+|\s(?:as|after|amid|while|and|but|following|if|unless|because|des
 
 
 def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False, counted=None,
-                   max_words=None, clauses=True, min_support=None):
+                   max_words=None, clauses=True, min_support=None, persons=()):
     """Rule-based gate on a model sentence. Returns "" if it passes, else the reason.
     titles are the story's own headlines. Nothing here trusts the model."""
     if re.search(r"[;:!?]\s|(?<![A-Z])\.\s", sentence) or "\n" in sentence:
@@ -1065,6 +1091,14 @@ def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False
 
     rawset = set(raw)
     title_raw = set(w for t, _ in distinct for w in raw_words(t))
+
+    # A named person tied to wrongdoing: the line must say who says so, or keep a qualifier.
+    if persons and set(keys) & set(persons) and rawset & WRONGDOING and not rawset & ATTRIBUTED:
+        return "unattributed allegation about a person"
+    # Job status ("former", "ex") must be what most headlines say, not one outlet's view.
+    for w in rawset & {"former", "ex"}:
+        if raw_support[w] < max(2, 0.4 * len(distinct)):
+            return "status word not common: " + w
     if rawset & DIE and not title_raw & (DIE | {"dead"}):
         return "kill/die changed"
     if rawset & KILL and not title_raw & KILL:
@@ -1119,7 +1153,8 @@ def digits(text):
     return re.sub(r"\b(%s)\b" % "|".join(NUM_DISPLAY), lambda m: NUM_DISPLAY[m.group(1).lower()], text, flags=re.I)
 
 
-def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=None, must_negate=False):
+def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=None, must_negate=False,
+                    persons=()):
     """Fallback when no model sentence passes: a real headline that is short and plain and passes
     the same word, number and negation checks as a model sentence. A renowned outlet's headline
     comes first (renowned maps title -> rank); otherwise the one printed by the most outlets."""
@@ -1139,12 +1174,15 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
                 continue
             if claim and not set(raw_words(text)) & (HEDGE | {"according"}):
                 continue                              # a claim is only shown with its attribution
-            if alpha and sum(w[0].isupper() for w in alpha) > 0.6 * len(alpha):
-                continue                              # Title Case Reads As Shouting
+            if len(alpha) >= 4 and not any(len(w) > 3 and w.islower() for w in alpha):
+                continue                              # Title Case Reads As Shouting (no plain word left)
             named = {k for _, k, _ in scan(text)} & set(consensus_keys)
             if len(named) < 2 or (consensus_keys and 3 * len(named) < 2 * len(set(consensus_keys))):
                 continue                              # it must say what most headlines say
-            ranked.append(((len(named), -renowned.get(title, 999), n, text == title, -len(words)), text))
+            # Carrying at least half of the story's shared words is enough; then shorter is better,
+            # which trims agency add-ons ("..., related events in Shenzhen").
+            enough = len(named) >= max(2, math.ceil(0.5 * len(set(consensus_keys))))
+            ranked.append(((enough, -renowned.get(title, 999), n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
@@ -1152,13 +1190,12 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
     support = 1 if n_wordings < 6 else min(6, max(2, math.ceil(0.15 * n_wordings)))
     printed = Counter(titles)
-    for _, title in sorted(ranked, reverse=True):
-        plain = title.rstrip(".")
+    for _, text, source in sorted(ranked, reverse=True):
+        plain = text.rstrip(".")
         # A headline that a third of the outlets print word for word IS what most outlets say.
-        full = next((t for t in printed if t.startswith(plain)), plain)
-        need = 1 if printed[full] >= max(3, len(titles) / 3) else support
+        need = 1 if printed[source] >= max(3, len(titles) / 3) else support
         if not check_sentence(plain, titles, must_negate, consensus_keys, False, counted,
-                              max_words=AI_WORDS + 2, clauses=False, min_support=need):
+                              max_words=AI_WORDS + 2, clauses=False, min_support=need, persons=persons):
             return plain
     return ""
 
@@ -1188,7 +1225,7 @@ def add_sentences(state, lines, picks, started):
         del cache[sid]
     used = 0
     for l in lines:
-        titles, shown, name_ok, ckeys, renowned = picks[l["id"]]
+        titles, shown, name_ok, ckeys, renowned, persons = picks[l["id"]]
         claim, disputed = "claim" in l["tags"], "disputed" in l["tags"]
         sig = "%d|%s|%s|%s|%s|%d" % (AI_RULES, model, l["key"], l["text"], ",".join(l["tags"]),
                                   zlib.crc32("\n".join(sorted(shown)).encode()))
@@ -1196,7 +1233,7 @@ def add_sentences(state, lines, picks, started):
         # Pick, don't write: a real headline that passes every check is used as printed, and the
         # model is asked only when none does (a small model invents words; a headline cannot).
         if name_ok and not disputed:
-            picked = common_headline(titles, ckeys, claim, renowned, l["text"], negate0)
+            picked = common_headline(titles, ckeys, claim, renowned, l["text"], negate0, persons)
             if picked:
                 l["sentence"], l["by"] = picked, "headline"
                 cache.pop(l["id"], None)
@@ -1210,7 +1247,7 @@ def add_sentences(state, lines, picks, started):
                 continue
         hit = cache.get(l["id"])
         if hit and hit["sig"] != sig and hit["s"] and name_ok and not disputed and \
-                not check_sentence(hit["s"], titles, negate0, ckeys, claim, l["text"]):
+                not check_sentence(hit["s"], titles, negate0, ckeys, claim, l["text"], persons=persons):
             hit["sig"] = sig                           # the accepted sentence still holds: keep it
         if hit and hit["sig"] == sig:
             l["sentence"] = hit["s"]
@@ -1246,11 +1283,11 @@ def add_sentences(state, lines, picks, started):
                     if why.startswith(("not in headlines: ", "small word not in headlines: ", "number")) and ": " in why:
                         extra += "\n- Do not use: %s." % why.split(": ", 1)[1].replace(" ", ", ")
                     sentence = write_sentence(model, heads, extra)
-                    why = check_sentence(sentence, titles, must_negate, ckeys, claim, l["text"])
+                    why = check_sentence(sentence, titles, must_negate, ckeys, claim, l["text"], persons=persons)
                     cut = re.search(CLAUSE, sentence)
                     if why and cut:                    # the core before an add-on may pass by itself
                         head = sentence[:cut.start()].strip()
-                        if not check_sentence(head, titles, must_negate, ckeys, claim, l["text"]):
+                        if not check_sentence(head, titles, must_negate, ckeys, claim, l["text"], persons=persons):
                             sentence, why = head, ""
                     if not why:
                         break
@@ -1271,7 +1308,7 @@ def add_sentences(state, lines, picks, started):
         used += bool(l["sentence"])
         if not l["sentence"] and name_ok and not disputed:
             negate = bool({"not", "never", "no"} & set((l["key"] + " " + l["text"]).split()))
-            l["sentence"] = common_headline(titles, ckeys, claim, renowned, l["text"], negate)
+            l["sentence"] = common_headline(titles, ckeys, claim, renowned, l["text"], negate, persons)
             l["by"] = "headline" if l["sentence"] else ""
         if l["sentence"]:
             if set(raw_words(l["sentence"])) & HEDGE and "claim" not in l["tags"]:
@@ -1446,7 +1483,7 @@ def render(state, now, cmap, built):
             and (domestic(stories[sid]) or not worldwide_enough(stories[sid]))]
     lines, picks, shown_stories = [], {}, []
     room = {"new": NEW_LINES, "day": DAY_LINES}
-    per_country = Counter()
+    per_country, per_region = Counter(), Counter()
     for sid in ranked:
         s = stories[sid]
         mem = members(s)
@@ -1464,6 +1501,9 @@ def render(state, now, cmap, built):
         where = event_country(s)
         if where and per_country[where] >= PER_COUNTRY:
             continue                                  # no single country fills the page
+        region = REGION_OF.get(where or "", "other")
+        if region != "other" and per_region[region] >= PER_REGION:
+            continue                                  # nor a single world region
         if not room[section]:
             if not any(room.values()):
                 break
@@ -1498,7 +1538,10 @@ def render(state, now, cmap, built):
                 seen_w.add(w)
                 shown.append(t)
         # A small story gets a sentence only if it is not about a person (see names_ok).
-        picks[sid] = (all_titles, shown, names_ok(s, now) or not has_person(s), ckeys, renowned)
+        need_p = max(2, math.ceil(0.2 * s["n"]))
+        persons = {k for e, c in s["e"].items() if e.startswith("P:") and c >= need_p
+                   for part in e[2:].split() for k, _ in tokenise(part)}
+        picks[sid] = (all_titles, shown, names_ok(s, now) or not has_person(s), ckeys, renowned, persons)
         firsts = [v[0] for v in mem.values()]
         lines.append({
             "id": sid, "section": section, "key": key, "text": text, "tags": tags, "related": 0,
@@ -1517,6 +1560,7 @@ def render(state, now, cmap, built):
         room[section] -= 1
         if where:
             per_country[where] += 1
+            per_region[REGION_OF.get(where, "other")] += 1
     lines.sort(key=lambda l: l["section"] != "new")               # new first; order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
     # Counted words are hard to read; a small story that got no sentence is left out.

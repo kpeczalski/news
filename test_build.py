@@ -678,6 +678,27 @@ class Writer(unittest.TestCase):
     def test_display_style(self):
         self.assertEqual(B.digits("U.S. envoys meet Putin as U.S. watches"), "US envoys meet Putin as US watches")
 
+    def test_named_person_and_wrongdoing_needs_attribution(self):
+        t = ["Chipco CEO John Example linked to spy", "John Example quits Chipco amid spy probe",
+             "Spy probe: John Example quits Chipco", "John Example and the spy: Chipco CEO quits",
+             "Chipco says CEO John Example quits after spy probe"]
+        c = lambda s: B.check_sentence(s, t, False, (), False, None, persons={"john", "example"})
+        self.assertEqual(c("John Example quits Chipco spy"), "unattributed allegation about a person")
+        self.assertEqual(c("John Example quits Chipco amid spy probe"), "")
+        self.assertEqual(B.check_sentence("John Example quits Chipco spy", t, False), "")   # no names given
+
+    def test_status_word_must_be_common(self):
+        t = ["Former Chipco CEO Example speaks", "Chipco CEO Example speaks at summit", "Chipco CEO Example speaks out",
+             "Chipco CEO Example speaks to press", "Chipco CEO Example speaks again"]
+        self.assertEqual(B.check_sentence("Former Chipco CEO Example speaks", t + ["Former Chipco CEO Example speaks in Lima", "Chipco CEO Example speaks in Oslo"], False),
+                         "status word not common: former")
+
+    def test_region_cap_and_aliases(self):
+        self.assertEqual(B.alias("kiev"), "kyiv")
+        f = [""] * 27
+        f[9] = "4#Kiev, Kyyiv, Misto, Ukraine#UP#UP12#1#1#1"
+        self.assertIn("L:kyiv", B.entities(f))
+
     def test_checker_one_fact_only(self):
         t = ["Death toll rises to 8 in Brooklyn building collapse as FDNY searches for survivors",
              "Brooklyn building collapse death toll rises to 8 as FDNY searches for survivors", "8 dead in Brooklyn building collapse",
@@ -715,7 +736,7 @@ class Writer(unittest.TestCase):
             "Pope Leo returns to Peru", "Pope Leo XIV returns home to Peru", "Leo returns home to Peru as pope",
             "Pope back home in Peru", "Peru greets returning pope", "Pope Leo lands in Peru"]
         self.assertEqual(B.common_headline(titles, {"pope", "peru", "return"}, False, None, "pope leo, 3 million"),
-                         "Pope returns home to Peru as 3 million expected at Lima Mass")   # printed by a third: kept whole
+                         "Pope returns home to Peru")          # the add-on is trimmed when the rest carries the story
 
     def test_page_states_how_much_history_it_has(self):
         st = B.new_state()

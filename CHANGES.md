@@ -2,6 +2,15 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 16:00
+Towards 10 on all three:
+- A named person linked to wrongdoing needs a source or qualifier in the line; "former"/"ex" only
+  when most headlines say so.
+- Add-ons are trimmed when the shorter headline still carries the story; proper names no longer
+  count as Title Case shouting.
+- At most 3 lines per world region; common name spellings across languages folded.
+- Each line shows countries (what the order uses) and new outlets per hour.
+
 ## 2026-11-13, 15:25
 - Verdict words ("scandal", "disgraced", "embattled") are refused in any line.
 
