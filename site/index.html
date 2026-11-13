@@ -187,7 +187,7 @@
     code.textContent = "";
     var found = false, section = null;
     var hours = data.history_hours || 24;
-    var SECTIONS = { "new": "// new", "day": "// most covered", "ongoing": "// crises" };
+    var SECTIONS = { "new": "// new, fastest growing", "day": "// most covered, by countries", "ongoing": "// crises, by death toll" };
     var legend = "";
     (data.lines || []).forEach(function (l) {
       if (r && r.story === l.id) found = true;
