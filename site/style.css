@@ -65,16 +65,16 @@ a:focus-visible, summary:focus-visible, button:focus-visible {
 ol.code { list-style: none; margin: 0; padding: 14px 0; counter-reset: ln; }
 ol.code > li {
   counter-increment: ln;
-  display: grid; grid-template-columns: 3.4em minmax(0, 1fr);
+  display: grid; grid-template-columns: 2.2em minmax(0, 1fr);
   padding: 8px 16px 8px 0;
 }
 ol.code > li::before {
-  content: counter(ln); color: var(--dim);
+  content: ""; color: var(--dim);
   text-align: right; padding-right: 1.3em;
   font-variant-numeric: tabular-nums; user-select: none;
 }
 ol.code > li::before { white-space: nowrap; }
-ol.code > li.new::before { content: "+" counter(ln); color: var(--up); }
+ol.code > li.new::before { content: "+"; color: var(--up); }
 ol.code > li.note { counter-increment: none; }
 ol.code > li.note::before { content: ""; }
 ol.code > li.sec { padding-top: 14px; font-size: 13px; counter-set: ln 0; }   /* each section numbered from 1 */
@@ -116,7 +116,7 @@ button.copy {
 }
 @media (max-width: 480px) {
   body { padding-left: max(8px, env(safe-area-inset-left, 0px)); padding-right: max(8px, env(safe-area-inset-right, 0px)); }
-  ol.code > li { grid-template-columns: 2.6em minmax(0, 1fr); padding-right: 12px; }
+  ol.code > li { grid-template-columns: 1.6em minmax(0, 1fr); padding-right: 12px; }
   ol.code > li::before { padding-right: .8em; }
   .m { font-size: 13px; }
   summary .t { font-size: 17.5px; }

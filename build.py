@@ -1908,10 +1908,17 @@ def render(state, now, cmap, built):
             continue                                  # a local accident is not a world crisis
         if w not in CONFLICTS and countries(stories[sid]) < BIG_DISASTER_COUNTRIES:
             continue                                  # outside known wars, only what the world covers
-        latest = max(v[1] for v in members(stories[sid]).values())
-        crises.append((latest, sid, w, days_on, backups))
-    # Latest first: when the event was last reported. Tolls are often one side's claims and press
-    # attention is uneven, so neither decides the order.
+        # Order: a mix of how recent, how deadly and how reliable. Recency halves after 6 hours; the
+        # toll counts on a log scale (6 and 9 dead are close, 6 and 600 are not); a toll that most
+        # headlines only attribute to one side counts half; two papers of record reporting it add 20%.
+        st = stories[sid]
+        latest = max(v[1] for v in members(st).values())
+        recency = 1 / (1 + (now - latest) / 24)
+        k, h = toll([t[0] for t in st["ti"].values()])
+        weight = 1 + math.log10(1 + k + h / 3)
+        claimed = headline_share(st, SPEECH) >= 0.5
+        record = len({d for d in st["ti"] if source_rank(d, st["ti"][d][1]) < pref_rank("reuters.com")}) >= 2
+        crises.append((recency * weight * (0.5 if claimed else 1) * (1.2 if record else 1), sid, w, days_on, backups))
     crises.sort(reverse=True)
     added = 0
     for _, sid, where, days_on, backups in crises:
