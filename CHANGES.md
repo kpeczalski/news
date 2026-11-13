@@ -2,6 +2,9 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 15:25
+- Verdict words ("scandal", "disgraced", "embattled") are refused in any line.
+
 ## 2026-11-13, 15:15
 After a review of the model setup:
 - Pick, don't write: a real headline that passes every check is used as printed; the model only

@@ -582,6 +582,7 @@ class Writer(unittest.TestCase):
         self.assertTrue(ok("Earthquake in Lima leaves 30 dead").startswith(("number", "not in headlines")))
         self.assertTrue(ok("Earthquake in Lima leaves 3 dead, president blamed").startswith("not in headlines"))
         self.assertEqual(ok("Shocking earthquake strikes Lima, 3 dead"), "flash word")
+        self.assertEqual(ok("Lima earthquake scandal leaves 3 dead"), "flash word")      # a verdict, not a fact
         self.assertTrue(ok("Earthquake does not strike Lima, 3 dead"))             # rejected
         self.assertEqual(ok("Earthquake in Lima leaves 3 dead", True), "dropped a negation")
         self.assertEqual(ok("Lima"), "length")

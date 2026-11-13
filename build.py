@@ -72,7 +72,7 @@ AI_TRIES = int(os.environ.get("AI_TRIES", "4"))             # attempts per story
 AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 22                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 23                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -131,7 +131,8 @@ FLASH = set("""shocking shock shocks stunning stuns stunned bombshell explosive 
 rips ripped destroys destroyed epic insane unbelievable incredible amazing horrific horrifying terrifying
 devastating heartbreaking tragic chaos fury furious outrage outraged meltdown nightmare jaw-dropping
 exclusive urgent revealed finally massive huge emotional beloved dramatic iconic heartfelt historic
-stunned furious bizarre chilling brutal savage""".split())
+stunned furious bizarre chilling brutal savage
+scandal scandals disgraced disgrace shamed notorious infamous embattled""".split())   # verdicts, not facts
 
 NUMWORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7",
             "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12", "thirteen": "13",
