@@ -646,8 +646,8 @@ def attach_translated(state, arts, slot):
     for sid, s in stories.items():
         if s["n"] < 3:
             continue
-        te = {e for e in top_ents(s) if rare_entity(state, s, e, slack=3)}
-        if len(te) >= 2:
+        te = set(top_ents(s))
+        if len(te) >= 2 and any(rare_entity(state, s, e, slack=10) for e in te):
             tops[sid] = te
             for e in te:
                 index[e].add(sid)
@@ -662,7 +662,9 @@ def attach_translated(state, arts, slot):
         best, best_share = None, 0.0
         for sid, c in cand.items():
             share = c / len(tops[sid])
-            if c >= 2 and share > best_share:
+            # two shared main names, at least one of which belongs to this story
+            if c >= 2 and share > best_share and any(
+                    rare_entity(state, stories[sid], e, slack=10) for e in ents & tops[sid]):
                 best, best_share = sid, share
         if best:
             s = stories[best]

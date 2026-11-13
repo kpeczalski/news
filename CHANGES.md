@@ -2,6 +2,10 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 14:30
+- Website only from now on. Non-English outlets match a story on two shared main names, one of
+  which belongs to the story (was: two uncommon names).
+
 ## 2026-11-13, 14:00
 After a review of the website (accuracy 4, selection 5, readability 7.5):
 - A real headline is used only if every word is common in the story (15% of wordings in big
