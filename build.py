@@ -62,8 +62,6 @@ CONFLICT = {c: name for name, codes in CONFLICTS.items() for c in codes.split()}
 # in context (who began the war), without judging any event. Edit only with a source.
 CONTEXT = {
     "Russia–Ukraine war": "Russia began its full-scale invasion of Ukraine on 24 February 2022.",
-    "Israel and the Palestinian territories": "The war began with the Hamas-led attack on Israel on 7 October 2023, "
-                                             "followed by Israel's military campaign in Gaza.",
 }
 BIG_DISASTER_COUNTRIES = 20                   # outside known wars: a disaster or attack the world covers
 BIG_EVENT = set("resigns resign resigned dies died arrested ousted sacked quits assassinated impeached".split())

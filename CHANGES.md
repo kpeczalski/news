@@ -235,3 +235,4 @@ After an independent grade of the live page (5 out of 10):
 - Crisis lines say who did what: a headline without says/claims comes first; an event most headlines state as fact is not forced to carry attribution. (The Russia line was a Ukrainian strike in Russia; now "Ukrainian strikes kill 9 in Russia".)
 - Crises ordered latest first (not by toll or coverage); each conflict shows its most widely reported event of the day.
 - Context line under crisis lines of long wars: one dated documented fact on how the war began (Russia–Ukraine: full-scale invasion 24 Feb 2022; Israel–Gaza: Hamas-led attack 7 Oct 2023 and Israel campaign in Gaza).
+- Context line removed for Israel and the Palestinian territories (a longer conflict; any single start date frames it). Kept only where the start is undisputed (Russia–Ukraine).
