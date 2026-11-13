@@ -114,9 +114,12 @@ DISPUTE_SHARE = 0.20
 
 # Renowned agencies and public broadcasters, shown first among sources and preferred for a
 # fallback headline. Not a ranking input. Overridden by rules/preferred_sources.txt.
-PREFERRED = ["reuters.com", "apnews.com", "afp.com", "bbc.com", "bbc.co.uk", "dw.com", "france24.com",
-             "npr.org", "pbs.org", "yle.fi", "cbc.ca", "abc.net.au", "nhk.or.jp", "swissinfo.ch",
-             "euronews.com", "aljazeera.com", "rfi.fr", "kyodonews.net"]
+PREFERRED = ["nytimes.com", "theguardian.com", "ft.com", "wsj.com", "washingtonpost.com", "economist.com",
+             "lemonde.fr", "elpais.com", "spiegel.de", "bloomberg.com", "scmp.com", "thehindu.com",
+             "japantimes.co.jp", "straitstimes.com", "hs.fi", "reuters.com", "apnews.com", "afp.com",
+             "wire.reprint", "bbc.com", "bbc.co.uk", "dw.com", "france24.com", "npr.org", "pbs.org", "yle.fi",
+             "cbc.ca", "abc.net.au", "nhk.or.jp", "swissinfo.ch", "euronews.com", "aljazeera.com", "rfi.fr",
+             "kyodonews.net"]
 
 
 def pref_rank(domain):
@@ -144,7 +147,7 @@ def wire_of(url):
 def source_rank(domain, url):
     """Preferred-list rank of the outlet, or of the agency whose copy it reprints."""
     w = wire_of(url)
-    return min(pref_rank(domain), pref_rank(w[1])) if w else pref_rank(domain)
+    return min(pref_rank(domain), pref_rank("wire.reprint")) if w else pref_rank(domain)
 
 
 # Dropped from lines and matching: grammar and newsroom filler. Negations and modal verbs

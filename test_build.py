@@ -544,7 +544,7 @@ class Stories(unittest.TestCase):
         B.load_rules()
         self.assertLess(B.pref_rank("reuters.com"), B.pref_rank("news.bbc.co.uk"))
         self.assertEqual(B.pref_rank("dailymail.co.uk"), 999)
-        self.assertLess(B.pref_rank("apnews.com"), B.pref_rank("nytimes.com"))          # agencies before newspapers
+        self.assertLess(B.pref_rank("nytimes.com"), B.pref_rank("apnews.com"))          # newspapers of record first
         B.OUTLET_SIZE.update({"bigpaper.com": 900000, "localtv.com": 40})
         try:
             arts2 = [art(d, "Earthquake strikes Lima, 3 dead, edition %d" % i) for i, d in enumerate(["localtv.com", "tiny.com", "bigpaper.com"])]
