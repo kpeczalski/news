@@ -16,8 +16,8 @@ jobs:
     timeout-minutes: 14
     env:
       REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
-      AI_MODEL: qwen3:4b            # runs on the server's processor (~2.5 GB); only for stories no headline fits
-      AI_TRIES: "2"
+      AI_MODEL: qwen3:1.7b          # small model on the server's processor; only for stories no headline fits
+      AI_TRIES: "3"
       OLLAMA_MODELS: ${{ github.workspace }}/models
     steps:
       - name: Get the code and the previous output

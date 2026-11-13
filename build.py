@@ -72,7 +72,7 @@ AI_TRIES = int(os.environ.get("AI_TRIES", "4"))             # attempts per story
 AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 24                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 25                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -949,8 +949,7 @@ def write_sentence(model, headlines, extra=""):
         "model": model, "stream": False, "think": False,
         "options": {"temperature": 0, "num_predict": 60},
         "messages": [{"role": "system", "content": AI_PROMPT + extra},
-                     {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)
-                      + "\n/no_think"}],                      # qwen3: answer directly, no reasoning text
+                     {"role": "user", "content": "Headlines:\n" + "\n".join("- " + h for h in headlines)}],
     })
     text = (out.get("message") or {}).get("content", "")
     text = re.sub(r"<think>.*?</think>", "", text, flags=re.S).strip()

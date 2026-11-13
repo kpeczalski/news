@@ -8,7 +8,8 @@ Newest first. Each change is applied only if the rule tests in `test_build.py` p
 ## 2026-11-13, 15:15
 After a review of the model setup:
 - Pick, don't write: a real headline that passes every check is used as printed; the model only
-  writes when none does. Model now qwen3:4b with 2 tries (more capable, used rarely).
+  writes when none does. (qwen3:4b was tried and dropped: it printed its reasoning instead of a
+  sentence; back to qwen3:1.7b with 3 tries.)
 
 ## 2026-11-13, 15:00
 - Words that only repeat shared names (e.g. "nvidia") no longer link two stories; the biggest
