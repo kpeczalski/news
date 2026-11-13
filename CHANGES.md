@@ -2,6 +2,10 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 13:35
+- "allegations of" / "reports of" count as a kept qualifier; small stories left as counted words
+  are not listed.
+
 ## 2026-11-13, 13:25
 - Model gets a second try that shortens the most printed headline; a qualifier kept in place
   ("suspected spy") counts as attribution; wider cricket filter.

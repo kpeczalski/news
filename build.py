@@ -55,6 +55,7 @@ NEW_LINES = int(os.environ.get("NEW_LINES", "5"))            # lines in "new in 
 DAY_LINES = int(os.environ.get("DAY_LINES", "7"))            # lines in "last 24 hours"
 NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs this much coverage to be listed
 DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "8"))  # so does an older one: a short list beats a padded one
+COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "20"))  # a line left as counted words must be bigger still
 MIN_OUTLETS = int(os.environ.get("MIN_OUTLETS", "5"))       # outlets needed to appear at all
 NAME_MIN = int(os.environ.get("NAME_MIN", "10"))            # wordings needed before a person is named
 HEADLINES = int(os.environ.get("HEADLINES", "3"))           # real headlines shown on tap (0 = none)
@@ -70,7 +71,7 @@ AI_PREFER = ["qwen3:8b", "qwen3:14b", "gemma3:12b", "llama3.1:8b", "mistral:7b",
 AI_WORDS = 10                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 19                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 20                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -1072,8 +1073,9 @@ def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False
         for a, b in zip(rw, rw[1:]):
             if a in QUALIFIER and b not in STOP:
                 qualified[b] += 1
+    hedging = QUALIFIER | {"allegation", "allegations", "accusation", "accusations", "claims", "reports", "reported"}
     for i, w in enumerate(raw):
-        if qualified[w] >= need and (i == 0 or raw[i - 1] not in QUALIFIER):
+        if qualified[w] >= need and not set(raw[max(0, i - 3):i]) & hedging:
             return "dropped a qualifier: " + w
 
     if claim:
@@ -1473,6 +1475,8 @@ def render(state, now, cmap, built):
             per_country[where] += 1
     lines.sort(key=lambda l: l["section"] != "new")               # new first; order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
+    # Counted words are hard to read; a small story that got no sentence is left out.
+    lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
     return {
         "v": 4,
         "ai": ai,

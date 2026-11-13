@@ -6,6 +6,7 @@ B.AI = "off"                       # tests never call a model; the writer is tes
 B.NEW_MIN_SCORE = 0                # most tests use tiny stories; the threshold has its own test
 B.MIN_SPREAD = 0                   # likewise the international floor
 B.DAY_MIN_SCORE = 0
+B.COUNTED_MIN_SCORE = 0
 
 
 def art(domain, title, loc="", persons="", translated=False):
@@ -653,11 +654,13 @@ class Writer(unittest.TestCase):
 
     def test_qualified_words_keep_their_qualifier(self):
         t = ["Chipco CEO resigns amid alleged affair with suspected spy", "Chipco CEO resigns over alleged affair",
-             "CEO of Chipco resigns amid alleged affair, suspected spy named", "Chipco CEO resigns"]
+             "CEO of Chipco resigns amid alleged affair, suspected spy named", "Chipco CEO resigns",
+             "Chipco CEO resigns after reports of affair", "Chipco CEO resigns after reports of an affair"]
         c = lambda s: B.check_sentence(s, t, False)
         self.assertEqual(c("Chipco CEO resigns amid affair"), "dropped a qualifier: affair")
         self.assertEqual(c("Chipco CEO resigns amid alleged affair"), "")
         self.assertEqual(c("Chipco CEO resigns"), "")
+        self.assertEqual(c("Chipco CEO resigns after reports of affair"), "")
 
     def test_display_style(self):
         self.assertEqual(B.digits("U.S. envoys meet Putin as U.S. watches"), "US envoys meet Putin as US watches")
