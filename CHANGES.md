@@ -244,3 +244,4 @@ After an independent grade of the live page (5 out of 10):
 - Crisis lines: sources telling the opposite-direction event are not listed under the line; a headline stating the toll is preferred.
 - Crisis lines keep the toll: a line without it is replaced by a passing headline that states the median toll.
 - Readability: country/outlet counts smaller and lighter; a little more space between lines.
+- Evening review: no labels on lines ("reports disagree" removed, owner rule); the model uses the most-reported number with its source, never a range (rules 28).

@@ -16,3 +16,4 @@ readability 10.
 | 2026-11-13 12:50Z | accuracy 5 | selection 5 | readability 6.5 | 7 lines; Nvidia allegation on the line |
 | 2026-11-13 15:35Z | accuracy 5 | selection 5 | readability 6 | two sections; crises thin, garbled model lines |
 | 2026-11-13 15:55Z | fairness 7 | accuracy 6 | selection 6 | readability 5 (3 parallel reviewers) |
+| 2026-11-13 17:05Z | accuracy 5 | selection 6.5 | readability 7 | evening review, website |

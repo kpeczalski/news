@@ -56,7 +56,7 @@
     var m = /^#(\d{4}-\d\d-\d\d)(?:-s(\w+))?$/.exec(location.hash);
     return m ? { day: m[1], story: m[2] || null } : null;
   }
-  var TAGS = { claim: "claim", disputed: "reports disagree", early: "early" };
+  var TAGS = {};                       // no labels on lines (owner: just facts)
 
   function bars(a) {
     var max = Math.max.apply(null, a);

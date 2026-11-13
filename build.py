@@ -124,7 +124,7 @@ AI_TRIES = int(os.environ.get("AI_TRIES", "4"))             # attempts per story
 AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 27                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 28                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -137,7 +137,8 @@ Rules:
   "drawing", "prompting", "sparking", "raising".
 - At most 12 words. Sentence case. Present tense. Write numbers as digits.
 - No opinion, no judgment words, no speculation, no quotation marks, no outlet names.
-- If headlines give different numbers for the same thing, write the range, like 4–5.
+- If headlines give different numbers for the same thing, use the number most headlines give,
+  with who gives it if they say ("military says 74"). Never write a range.
 - Output the sentence only."""
 SHARE = 0.35                                  # a word must be in this share of headlines
 HEDGE_SHARE = 0.25
