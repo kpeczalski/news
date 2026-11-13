@@ -423,6 +423,26 @@ class Stories(unittest.TestCase):
             B.MIN_SPREAD = saved
         self.assertEqual([l["outlets"] for l in p["lines"]], [5])
 
+    def test_big_event_fragments_fold_into_one_line(self):
+        who = "jensen example"
+        org = "chipco"
+        def mk(prefix, titles):
+            out = []
+            for i, title in enumerate(titles):
+                f = [""] * 27
+                f[11], f[13] = who, org
+                out.append({"domain": "%s%d.com" % (prefix, i), "url": "https://x/%s%d" % (prefix, i), "title": title,
+                            "slug": False, "ents": B.entities(f), "toks": B.tokenise(title)})
+            return out
+        # the names are everywhere: 300 other reports mention them too
+        spread = mk("s", ["qx%da qx%db qx%dc qx%dd" % (i, i, i, i) for i in range(300)])
+        a = mk("a", ["Chipco CEO Jensen Example resigns, board names interim chief %d" % i for i in range(8)])
+        b = mk("b", ["Former Chipco CEO Example linked to spy, report %d" % i for i in range(5)])
+        noise = [art("n%d.com" % i, "zz%da zz%db zz%dc chipco" % (i, i, i)) for i in range(400)]
+        _, p = run([(100, spread + a + b + noise, [])])
+        big = [l for l in p["lines"] if l["outlets"] >= 5]
+        self.assertEqual([(l["outlets"], l["related"]) for l in big], [(8, 1)])
+
     def test_affairs_of_state_weigh_more(self):
         a = [art("a%d.com" % i, "Bus crash on mountain road, toll version %d" % i) for i in range(6)]
         b = [art("b%d.com" % i, "Vice president resigns from office, version %d" % i) for i in range(5)]

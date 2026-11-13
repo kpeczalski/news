@@ -2,6 +2,11 @@
 
 Newest first. Each change is applied only if the rule tests in `test_build.py` pass.
 
+## 2026-11-13, 13:15
+- Website live at kpeczalski.github.io/news (GitHub, small model qwen3:1.7b).
+- Fragments of one big event fold into one line even when its names are everywhere
+  (shared main name plus distinctive shared words).
+
 ## 2026-11-13, 09:40
 - Renamed to news; the desktop shortcut is now "news" (the old "facts" shortcut is removed).
 

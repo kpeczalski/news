@@ -1374,10 +1374,22 @@ def render(state, now, cmap, built):
         of them occurs in these two stories more than everywhere else together (a place such as
         "Logan Circle" next to a common one such as "Washington")."""
         shared = set(top_ents(small)) & big_names
-        if len(shared) < 2:
+        if not shared:
             return False
-        return (sum(1 for e in shared if rare_entity(state, small, e, big, slack=3)) >= 2
-                or any(rare_entity(state, small, e, big) for e in shared))
+        if len(shared) >= 2 and (sum(1 for e in shared if rare_entity(state, small, e, big, slack=3)) >= 2
+                                 or any(rare_entity(state, small, e, big) for e in shared)):
+            return True
+        # A big event spreads its names over so many reports that none looks rare. Then a shared
+        # main name plus two shared distinctive words ("nvidia", "huang"; "microsoft", "outage") is enough.
+        # A word is distinctive here when at least a third of all its uses are in these two stories.
+        rare_words = {k for k in set(top_tokens(small)[:8]) & set(top_tokens(big)[:8])
+                      if not is_num(k) and state["df"].get(k, 0) <= 3 * (small["t"].get(k, 0) + big["t"].get(k, 0))}
+        if len(rare_words) >= 2:
+            return True
+        # Or two shared names plus one distinctive word that is not itself part of those names
+        # ("Microsoft" + "Exchange Online" + "outage"; but "Gaza" + "Rafah" + "gaza" is not enough).
+        name_words = {k for e in shared for p in e[2:].split() for k, _ in tokenise(p)}
+        return len(shared) >= 2 and bool(rare_words - name_words)
 
     lines, picks, shown_stories = [], {}, []
     room = {"new": NEW_LINES, "day": DAY_LINES}
