@@ -71,7 +71,7 @@ AI_PREFER = ["qwen3:8b", "qwen3:14b", "gemma3:12b", "llama3.1:8b", "mistral:7b",
 AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 21                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 22                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -1193,8 +1193,10 @@ def add_sentences(state, lines, picks, started):
             must_negate = bool({"not", "never", "no"} & set((l["key"] + " " + l["text"]).split()))
             hints = ["", "\n- Copy wording from the headlines; do not use any word that is not in them."
                          "\n- Shorter: at most 10 words, one clause, no semicolon.",
-                     "\n- Give only who and what, in at most 7 words. No numbers. Apart from small connecting "
-                     "words, use only these words: " + ", ".join(supported_words(titles)) + "."]
+                     "\n- At most 12 words. Apart from small connecting words, use only these words: "
+                     + ", ".join(supported_words(titles)) + ". Include: " + ", ".join(sorted(ckeys)) + ".",
+                     "\n- Write it as: who + what + where + about what. At most 12 words. Use these words: "
+                     + ", ".join(sorted(ckeys)) + "."]
             if claim:
                 hedges = Counter(w for t in shown for w in raw_words(t) if w in HEDGE)
                 word = hedges.most_common(1)[0][0] if hedges else "says"
@@ -1213,7 +1215,8 @@ def add_sentences(state, lines, picks, started):
                         extra += "\n- Your last answer left out what the story is about. Include these words: %s." \
                             % ", ".join(sorted(ckeys))
                     if why in ("length", "extra clause"):
-                        extra += "\n- Your last answer was too long. Use at most 8 words and a single clause."
+                        extra += ("\n- Your last answer was too long. Use at most 12 words and a single clause: "
+                                  "drop details, keep who, what, where and what it is about.")
                     if why.startswith(("not in headlines: ", "small word not in headlines: ", "number")) and ": " in why:
                         extra += "\n- Do not use: %s." % why.split(": ", 1)[1].replace(" ", ", ")
                     sentence = write_sentence(model, heads, extra)

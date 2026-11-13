@@ -774,7 +774,7 @@ class Writer(unittest.TestCase):
     def test_bad_sentence_falls_back_to_counted_line(self):
         p1, p2, calls = self._run("Earthquake in Lima leaves 300 dead, city destroyed")
         self.assertEqual(p1["lines"][0]["sentence"], "")
-        self.assertEqual(len(calls), 3)                                # two retries, then give up until the story changes
+        self.assertEqual(len(calls), 4)                                # three retries, then give up until the story changes
         self.assertTrue(p1["lines"][0]["text"])
 
     def test_retry_names_the_refused_words(self):
