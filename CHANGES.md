@@ -243,3 +243,4 @@ After an independent grade of the live page (5 out of 10):
 - Crisis lines: who attacked whom is checked against the headlines (Russia/Ukraine, Israel/Gaza); a story whose headlines point both ways (two events merged) is left off, a line pointing the other way is dropped; "shoots down/intercepts" reverses the actor.
 - Crisis lines: sources telling the opposite-direction event are not listed under the line; a headline stating the toll is preferred.
 - Crisis lines keep the toll: a line without it is replaced by a passing headline that states the median toll.
+- Readability: country/outlet counts smaller and lighter; a little more space between lines.
