@@ -224,3 +224,4 @@ After an independent grade of the live page (5 out of 10):
 ## 2026-11-13, 17:40 (Helsinki)
 - Loss of life weighs more (up to 1.5x when most reports tell of deaths), from GDELT counts or headline words.
 - New "ongoing crises" section: crisis coverage added up per country over 7 days (or 4+ separate stories today), largest crises not on the page get one line.
+- Two sections (user): "most covered" and "crises" (wars, attacks, disasters by headline words; one line per country; raised by up to 2x for crises covered most days of the week). One-week history backfilled from GDELT, a few past files per run. Individual deaths ("dies") are not crises and do not get the life weight.

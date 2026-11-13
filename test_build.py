@@ -2,6 +2,8 @@
 import gzip, json, os, pathlib, shutil, tempfile, unittest, zipfile
 import build as B
 
+os.environ["BACKFILL"] = "0"
+B.CRISIS_SECTION = False          # most test stories are disasters; the crises section has its own test
 B.AI = "off"                       # tests never call a model; the writer is tested with a stub
 B.NEW_MIN_SCORE = 0                # most tests use tiny stories; the threshold has its own test
 B.MIN_SPREAD = 0                   # likewise the international floor

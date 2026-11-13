@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="description" content="What most news outlets report right now, in the words they share. Built by counting, not written by anyone.">
 <title>news</title>
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
 <!--page-->
@@ -188,10 +188,10 @@
     var found = false, section = null;
     var hours = data.history_hours || 24;
     var od = data.ongoing_days || 1;
-    var SECTIONS = { "new": "// new in the last 3 hours", "day": "// last " + hours + " hours",
-                     "ongoing": "// ongoing crises: covered in many stories" + (od > 1 ? " over " + od + " days" : " today") +
-                                ", not on the list above" };
-    var legend = ", biggest first";
+    var SECTIONS = { "new": "// new in the last 3 hours", "day": "// most covered, last " + hours + " hours",
+                     "ongoing": "// crises: wars, attacks and disasters, one line per country" +
+                                (od > 1 ? " (weighted by " + od + " days of coverage)" : "") };
+    var legend = "";
     (data.lines || []).forEach(function (l) {
       if (r && r.story === l.id) found = true;
       if (l.section && l.section !== section && SECTIONS[l.section]) {

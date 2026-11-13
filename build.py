@@ -45,7 +45,9 @@ DEATH_WORDS = set("killed kills kill dead dies died death deaths wounded injured
 CRISIS_WORDS = set("""war airstrike airstrikes bombing shelling missile missiles drone
 drones troops military ceasefire hostages hostage refugees famine siege offensive invasion militants fighting
 earthquake flood floods cyclone hurricane typhoon displaced humanitarian genocide gunmen""".split())
-ONGOING_LINES = 3                             # "ongoing": crises covered most over the last days
+CRISIS_SECTION = True
+ONGOING_LINES = 4                             # "ongoing": crises covered most over the last days
+VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
 ONGOING_DAYS = 7
 ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
@@ -527,10 +529,50 @@ def read_gkg(slot, translated, rules, stats):
                 title, slug = slug_title(url_), True
         if title and blocked_titles and blocked_titles.search(title):
             continue
+        codes = Counter(b.split("#")[2].strip().upper() for b in f[9].split(";")
+                        if len(b.split("#")) > 2 and b.split("#")[2].strip())
         arts.append({"domain": domain, "url": url_, "title": title, "slug": slug,
+                     "cc": codes.most_common(1)[0][0] if codes else "",
                      "ents": entities(f),
                      "toks": tokenise(title) if (title and not translated) else []})
     return arts
+
+
+def tally_crises(state, arts, slot, weight=1):
+    """Per country and day: articles about a war, attack or disaster, and all articles. Feeds the
+    "ongoing crises" section, which needs days of history that the stories themselves do not keep."""
+    day = time.strftime("%Y-%m-%d", time.gmtime(slot * SLOT))
+    tally = state.setdefault("ongoing", {})
+    for a in arts:
+        if not a.get("cc") or {"T:sport", "T:celeb"} & a["ents"]:
+            continue
+        row = tally.setdefault(a["cc"], {}).setdefault(day, [0, 0])
+        if not isinstance(row, list):                 # (an older format kept one number)
+            row = tally[a["cc"]][day] = [0, 0]
+        row[1] += weight
+        if {"T:crisis", "T:death"} & a["ents"]:
+            row[0] += weight
+
+
+BACKFILL_FILES = 24                           # past files read per run until a week is covered
+
+
+def backfill(state, latest, rules, started):
+    """Once: read every 4th past file of the last 7 days (English only), a few per run, so the
+    "ongoing" section has a week of history from the start."""
+    nxt = state.get("backfill_next")
+    if nxt is None:
+        nxt = state["backfill_next"] = latest - 96 * 7
+        state["backfill_end"] = latest
+    done = 0
+    stats = {"rows": 0, "titled": 0}
+    while nxt < state["backfill_end"] and done < BACKFILL_FILES and time.time() - started < BUDGET / 2:
+        tally_crises(state, read_gkg(nxt, False, rules, stats), nxt, weight=4)
+        nxt += 4
+        done += 1
+    state["backfill_next"] = nxt
+    if done:
+        log("backfill: read", done, "past files, now at", stamp(nxt))
 
 
 def load_countries():
@@ -1300,7 +1342,10 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     # Words other headlines print in lower case; used to put a Title Case headline in sentence case.
     low, cap = Counter(), Counter()
     for t in titles:
-        for w in re.findall(r"[A-Za-z][a-z'-]+", t):
+        ws = t.split()
+        if len(ws) >= 4 and not any(len(w) > 3 and w.islower() for w in ws):
+            continue                                  # a Title Case headline says nothing about case
+        for w in re.findall(r"[A-Za-z][a-z'-]+", " ".join(ws[1:])):
             (cap if w[0].isupper() else low)[w.lower()] += 1
     # A word is lower case when other headlines print it so more often than capitalised mid-sentence
     # ("resigns"); names stay capitalised ("Moscow").
@@ -1559,7 +1604,7 @@ def render(state, now, cmap, built):
         boost = STATE_BOOST if STATE_WORDS & {FOLD.get(k, k) for k in top_tokens(s)} else 1.0
         if cmap and not other:
             boost *= NO_OTHER_LANG
-        boost *= 1 + LIFE_WEIGHT * min(1.0, share(s, "T:death", DEATH_WORDS) / 0.5)
+        boost *= 1 + LIFE_WEIGHT * min(1.0, share(s, "T:death", VIOLENT_DEATH | {"dead", "deaths"}) / 0.5)
         return ((w + reprint * max(0, english - w) + OTHER_LANG_WEIGHT * other) * spread * boost,
                 c, len(members(s)))
 
@@ -1569,6 +1614,14 @@ def render(state, now, cmap, built):
         titles = [t[0] for t in s["ti"].values()]
         worded = sum(1 for t in titles if set(raw_words(t)) & words) / max(1, len(titles))
         return max(tagged, worded)
+
+    def headline_share(s, words):
+        titles = [t[0] for t in s["ti"].values()]
+        return sum(1 for t in titles if set(raw_words(t)) & words) / max(1, len(titles))
+
+    def is_crisis(s):
+        """War, attack or disaster, by the story's own headlines: these go to the crises section."""
+        return CRISIS_SECTION and headline_share(s, CRISIS_WORDS | VIOLENT_DEATH) >= 0.4
 
     def event_country(s):
         codes = [(c, e[2:]) for e, c in s["e"].items() if e.startswith("K:")]
@@ -1714,6 +1767,8 @@ def render(state, now, cmap, built):
             skip(s, "small"); continue  # too small to list
         if not worldwide_enough(s):
             skip(s, "not worldwide"); continue
+        if is_crisis(s):
+            skip(s, "crises section"); continue
         if s["e"].get("T:celeb", 0) >= 0.4 * max(1, s["n"]):
             skip(s, "celebrity"); continue
         if s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]):
@@ -1757,44 +1812,43 @@ def render(state, now, cmap, built):
     crisis_today = {}
     for sid, s in stories.items():
         where = event_country(s)
-        if not where or share(s, "T:crisis", CRISIS_WORDS | DEATH_WORDS) < 0.3 or s["e"].get("T:sport", 0) >= 0.3 * s["n"] \
-                or s["e"].get("T:celeb", 0) >= 0.4 * s["n"]:
+        if not where or not is_crisis(s) or s["e"].get("T:sport", 0) >= 0.3 * s["n"] \
+                or s["e"].get("T:celeb", 0) >= 0.4 * s["n"] or len(members(s)) < MIN_OUTLETS:
             continue
-        mem = members(s)
-        crisis_today.setdefault(where, []).append((score(s)[0], sid, len(mem)))
-    for where, items in crisis_today.items():
-        days = tally.setdefault(where, {})
-        days[today] = max(days.get(today, 0), sum(n for _, _, n in items))
+        crisis_today.setdefault(where, []).append((score(s)[0], sid, len(members(s))))
     keep = {time.strftime("%Y-%m-%d", time.gmtime((now - 96 * d) * SLOT)) for d in range(ONGOING_DAYS)}
     for where in list(tally):
-        tally[where] = {d: n for d, n in tally[where].items() if d in keep}
+        tally[where] = {d: v for d, v in tally[where].items() if d in keep and isinstance(v, list)}
         if not tally[where]:
             del tally[where]
-    on_page = {l["_where"] for l in lines if l.get("_where")}
+    # Crises section: wars, attacks and disasters, one line per country (its biggest story today).
+    # Ordered by today's story, raised by up to double for a crisis covered on many days of the week
+    # and making up a large share of what is written about that country.
+    n_days = len({d for days in tally.values() for d in days if days[d][0]})
     shown_ids = {l["id"] for l in lines}
-    # A crisis is ongoing when it is covered on several days, or (while history is short) in several
-    # separate stories at once: wars and disasters come in many small reports, one-off events do not.
-    crises = sorted(((sum(d.values()), len(d), w) for w, d in tally.items()
-                     if w in crisis_today and (len(d) >= 3 or len(crisis_today[w]) >= ONGOING_STORIES)),
-                    reverse=True)
-    n_days = len({d for days in tally.values() for d in days})
+    crises = []
+    for w, items in crisis_today.items():
+        d = tally.get(w, {})
+        crisis, total = sum(v[0] for v in d.values()), sum(v[1] for v in d.values())
+        days_on = sum(1 for v in d.values() if v[0] >= 8)
+        ongoing = min(1.0, days_on / ONGOING_DAYS) * min(1.0, 3 * crisis / max(1, total))
+        best, sid, _ = max(items)
+        if best < 4 or (not worldwide_enough(stories[sid]) and days_on < 3):
+            continue                                  # a local accident is not a world crisis
+        crises.append((best * (1 + ongoing), sid, w, days_on))
+    crises.sort(reverse=True)
     added = 0
-    for total, covered, where in crises:
-        if added >= ONGOING_LINES + SPARE_LINES or total < ONGOING_MIN:
+    for _, sid, where, days_on in crises:
+        if added >= ONGOING_LINES + SPARE_LINES:
             break
-        if where in on_page:
-            continue                                  # already on the page today
-        for _, sid, _ in sorted(crisis_today[where], reverse=True):
-            s = stories[sid]
-            mem = members(s)
-            if sid in shown_ids or len(mem) < MIN_OUTLETS or score(s)[0] < 2:
-                continue
-            line = make_line(sid, s, mem, "ongoing", where)
-            if line:
-                line["covered_days"] = covered
-                lines.append(line)
-                added += 1
-                break
+        if sid in shown_ids:
+            continue
+        s = stories[sid]
+        line = make_line(sid, s, members(s), "ongoing", where)
+        if line:
+            line["covered_days"] = days_on
+            lines.append(line)
+            added += 1
     lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2}[l["section"]])   # order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
     # Counted words are hard to read; a small story that got no sentence is left out.
@@ -1910,18 +1964,25 @@ def main():
         n_en = n_tr = 0
         if state["last"] < slot <= latest:
             en = read_gkg(slot, False, rules, stats)
+            if slot >= state.get("backfill_end", 0):
+                tally_crises(state, en, slot)
             cluster_slot(state, en, slot)
             for a in en:
                 state["dom"][a["domain"]] = slot
             state["last"], n_en = slot, len(en)
         if state["last_tr"] < slot <= latest_tr:
             tr = read_gkg(slot, True, rules, stats)
+            if slot >= state.get("backfill_end", 0):
+                tally_crises(state, tr, slot)
             attach_translated(state, tr, slot)
             for a in tr:
                 state["dom"][a["domain"]] = slot
             state["last_tr"], n_tr = slot, len(tr)
         state["arts"][str(slot)] = state["arts"].get(str(slot), 0) + n_en + n_tr
         log(stamp(slot), "english", n_en, "translated", n_tr, "stories", len(state["stories"]))
+
+    if os.environ.get("BACKFILL", "1") == "1":
+        backfill(state, latest, rules, started)
 
     # Canary: if GDELT changes its format, stop before publishing nonsense.
     if stats["rows"] > 500 and stats["titled"] < 0.3 * stats["rows"]:
