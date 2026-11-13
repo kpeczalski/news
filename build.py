@@ -1298,7 +1298,13 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     renowned = renowned or {}
     ranked = []
     # Words other headlines print in lower case; used to put a Title Case headline in sentence case.
-    lower_seen = {w for t in titles for w in re.findall(r"[a-z][a-z'-]+", t) if not w[:1].isupper()}
+    low, cap = Counter(), Counter()
+    for t in titles:
+        for w in re.findall(r"[A-Za-z][a-z'-]+", t):
+            (cap if w[0].isupper() else low)[w.lower()] += 1
+    # A word is lower case when other headlines print it so more often than capitalised mid-sentence
+    # ("resigns"); names stay capitalised ("Moscow").
+    lower_seen = {w for w in low if low[w] >= cap[w]}
     small = {"a", "an", "the", "of", "in", "on", "at", "to", "for", "by", "with", "from", "over", "into"}
     n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
     for title, n in Counter(titles).items():
