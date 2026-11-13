@@ -61,7 +61,6 @@ CONFLICT = {c: name for name, codes in CONFLICTS.items() for c in codes.split()}
 # One dated, widely documented fact per conflict, shown under its crisis line so a single event is read
 # in context (who began the war), without judging any event. Edit only with a source.
 CONTEXT = {
-    "Russia–Ukraine war": "Russia began its full-scale invasion of Ukraine on 24 February 2022.",
 }
 BIG_DISASTER_COUNTRIES = 20                   # outside known wars: a disaster or attack the world covers
 BIG_EVENT = set("resigns resign resigned dies died arrested ousted sacked quits assassinated impeached".split())
