@@ -62,6 +62,7 @@ CONFLICT = {c: name for name, codes in CONFLICTS.items() for c in codes.split()}
 # in context (who began the war), without judging any event. Edit only with a source.
 CONTEXT = {
 }
+UNKNOWN_TOLL_WEIGHT = 2.0                     # = about 9 people killed on the log scale
 BIG_DISASTER_COUNTRIES = 20                   # outside known wars: a disaster or attack the world covers
 BIG_EVENT = set("resigns resign resigned dies died arrested ousted sacked quits assassinated impeached".split())
 ONGOING_DAYS = 7
@@ -1915,7 +1916,9 @@ def render(state, now, cmap, built):
         latest = max(v[1] for v in members(st).values())
         recency = 1 / (1 + (now - latest) / 24)
         k, h = toll([t[0] for t in st["ti"].values()])
-        weight = 1 + math.log10(1 + k + h / 3)
+        # No toll reported yet (often the case for a large attack still unfolding) is not "no one hurt":
+        # it weighs like a mid-sized toll rather than nothing.
+        weight = 1 + math.log10(1 + k + h / 3) if (k or h) else UNKNOWN_TOLL_WEIGHT
         claimed = headline_share(st, SPEECH) >= 0.5
         record = len({d for d in st["ti"] if source_rank(d, st["ti"][d][1]) < pref_rank("reuters.com")}) >= 2
         crises.append((recency * weight * (0.5 if claimed else 1) * (1.2 if record else 1), sid, w, days_on, backups))
