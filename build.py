@@ -1364,6 +1364,9 @@ NO_HARM = re.compile(r"\bno (one|injuries|injury|casualties|deaths)\b|\bnobody (
                      r"\bunharmed\b|\bwithout injur", re.I)
 
 
+NO_DEATH = re.compile(r"\bno (deaths?|fatalities|one (was )?killed)\b|\bwithout (deaths|fatalities)\b", re.I)
+
+
 def toll(titles):
     """(killed, injured) as most headlines that give a number state it: the median of each
     headline's figure, the lower end of a range. (0, 0) when no headline gives one."""
@@ -2066,10 +2069,8 @@ def render(state, now, cmap, built):
                         hurt.append(int((m.group(1) or m.group(4)).replace(",", "")))
             if len(hurt) >= 2 and min(hurt) >= 2:
                 l["sentence"] = l["sentence"].rstrip(".") + ", at least %d injured" % min(hurt)
-                if accident and len(titles0) >= 10 and not any(
-                        set(raw_words(t)) & {"killed", "kills", "kill", "dead", "dies", "died", "death", "deaths",
-                                              "fatal", "fatalities", "bodies"} for t in titles0):
-                    l["sentence"] += ", no deaths reported"   # none of its headlines reports a death
+                if accident and toll(titles0)[0] == 0 and sum(1 for t in titles0 if NO_DEATH.search(t)) >= 2:
+                    l["sentence"] += ", no deaths"            # 2+ headlines say so, none reports one
             elif accident and not TOLL_RE.search(digits(l["sentence"])) and sum(
                     1 for t in titles0 if NO_HARM.search(t)) >= 2:
                 l["sentence"] = l["sentence"].rstrip(".") + ", no injuries reported"
