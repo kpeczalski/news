@@ -19,3 +19,4 @@ readability 10.
 | 2026-11-13 17:05Z | accuracy 5 | selection 6.5 | readability 7 | evening review, website |
 | 2026-11-14 10:15Z | accuracy 5 | selection 6 | readability 7 | quick re-grade (sonnet) |
 | 2026-11-14 10:20Z | accuracy 6 | selection 7 | readability 8 | reviewer given method + owner rules (sonnet) |
+| 2026-11-14 17:05Z | accuracy 6 | selection 6 | readability 8 | daily review vs method (sonnet) |

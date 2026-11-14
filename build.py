@@ -2059,6 +2059,13 @@ def render(state, now, cmap, built):
     # events merged and is left off; a line pointing the other way from most headlines is dropped
     # (the conflict's next event takes its place).
     for l in lines:
+        # A named person's resignation, arrest or death is never in the model's words: a real headline
+        # that passes the checks, or the line is left off.
+        titles0, _, _, ckeys0, renowned0, persons0 = picks[l["id"]]
+        if l.get("by") == "model" and l["sentence"] and persons0 and \
+                set(raw_words(l["sentence"])) & set(persons0) and set(raw_words(l["sentence"])) & BIG_EVENT:
+            alt = common_headline(titles0, ckeys0, "claim" in l["tags"], renowned0, l["text"], False, persons0)
+            l["sentence"], l["by"] = (digits(alt), "headline") if alt else ("", "")
         # A crisis line keeps the toll most headlines give: a line without it is replaced by a real
         # headline that states it, when one passes the checks.
         titles0 = picks[l["id"]][0]

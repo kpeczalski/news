@@ -263,3 +263,4 @@ After an independent grade of the live page (5 out of 10):
 - Bombs, blasts, explosions, shootings, assassinations count as crisis events (the Moscow bombings moved to crises). Stories with 20%+ celebrity-tagged reports are left off (was 40%).
 - Survival headlines ("All passengers and crew ... survive") count as stating the toll. "At least N injured" only from headlines with the same death count as the line. News roundups ("..., and other Mideast news") blocked.
 - Lines follow the latest development: once 15%+ of headlines report the outcome (lifted, resumed, restored, freed...), a headline with it comes first; then headlines from the last 6 hours ("FAA lifts nationwide ground stop for flights").
+- Daily review: a named person resigning/arrested/dying is never in model words: a real passing headline, or the line is left off.
