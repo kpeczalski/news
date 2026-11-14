@@ -27,3 +27,5 @@
 10. Reviewers get how.html and this file before grading.
 11. Improve continuously with independent reviews; log scores in SCORES.md and changes in
     CHANGES.md. Ask the owner before changing any of the points above.
+
+Working rule (owner): a change agreed in conversation is implemented right away; planned reviews are updated after.
