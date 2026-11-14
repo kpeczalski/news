@@ -1373,6 +1373,11 @@ def toll(titles):
         lows = [int(x.replace(",", "")) for x in re.findall(r"\b(\d[\d,]*)\s*[-–]\s*\d", digits(t))]
         if d and lows:
             d = min(d, min(lows))                      # "43–74 dead": the lower end
+        words = set(raw_words(t))
+        if not d and words & {"kills", "killed", "assassinated", "dies", "dead"}:
+            d = 1                                      # a person killed, no number given
+        if not h and words & {"injures", "injured", "wounds", "wounded", "hurt"}:
+            h = 1
         if d:
             dead.append(d)
         if h:
@@ -1464,6 +1469,7 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             cut = None                                # never cut off who says the main clause
         # (an allegation in the add-on itself, "... amid alleged affair", may be cut off whole)
         for text in {title_sc, title_sc[:cut.start()].strip() if cut else title_sc}:
+            text = re.sub(r"\banother\s+", "", text, flags=re.I)   # "in another car bombing": no earlier story here
             words = text.split()
             alpha = [w for w in words if w[:1].isalpha()]
             if not 4 <= len(words) <= AI_WORDS + 2 or re.search(r"[?!:;|]", text):
@@ -1981,7 +1987,8 @@ def render(state, now, cmap, built):
         k, h = toll([t[0] for t in st["ti"].values()])
         # No toll reported yet (often the case for a large attack still unfolding) is not "no one hurt":
         # it weighs like a mid-sized toll rather than nothing.
-        weight = 1 + 2 * math.log10(1 + k + h / 4) if (k or h) else UNKNOWN_TOLL_WEIGHT   # lives first
+        # Lives first: any person killed or injured weighs above harm to things (an unreported toll).
+        weight = 2 + 2 * math.log10(1 + k + h / 4) if (k or h) else UNKNOWN_TOLL_WEIGHT
         claimed = headline_share(st, SPEECH) >= 0.5
         record = len({d for d in st["ti"] if source_rank(d, st["ti"][d][1]) < pref_rank("reuters.com")}) >= 2
         crises.append((recency * weight * (0.5 if claimed else 1) * (1.2 if record else 1), sid, w, days_on, backups))

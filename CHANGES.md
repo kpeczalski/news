@@ -252,3 +252,4 @@ After an independent grade of the live page (5 out of 10):
 - "unprecedented" and "another" refused (hype; assumes context).
 - Crises: lives first (toll weighted x2 on a log scale; no reported toll = ~1 killed, so deaths outweigh infrastructure); within a conflict the deadliest event is shown (owner).
 - Who-attacked-whom check extended to the Iran war (US/Israel vs Iran): a line telling both directions is left off.
+- Crises: any person killed or injured (even without a number) ranks above harm to things; "another" is dropped from headlines instead of refusing them (keeps "Former Ukrainian prime minister's adviser injured in Moscow car bombing").

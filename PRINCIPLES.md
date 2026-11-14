@@ -10,7 +10,7 @@
    deaths a year), plus disasters or attacks covered in 20+ countries. Speeches, talks and
    sanctions stay in most covered. One line per conflict (countries of one conflict count as one).
 5. Crisis order: lives first, then recency and reliability; never press coverage. Toll (killed,
-   injured/4) on a log scale weighted x2; an unreported toll counts like ~1 killed (deaths outweigh
+   injured/4) on a log scale; any person harmed outweighs an event with no harm to people reported (deaths outweigh
    damage to things); recency halves after 6 h; a toll only one side claims counts half; two papers
    of record add 20%. Within a conflict, the deadliest event of the day is its line.
 6. A crisis line says who did what (checked against the headlines; mixed-direction stories are left off) ("Ukrainian strikes kill 9 in Russia"), not who says it,
