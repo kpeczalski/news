@@ -9,11 +9,10 @@
 4. Crises: violent events (not accidents, speeches or war politics) in an ongoing armed conflict (public list of 1,000+
    deaths a year), plus disasters or attacks covered in 20+ countries. Speeches, talks and
    sanctions stay in most covered. One line per conflict (countries of one conflict count as one).
-5. Crisis order is a mix of recency, death toll and reliability, never press coverage:
-   recency halves after 6 h; toll on a log scale; an unreported toll is not zero (weighs like
-   ~9 killed); a toll only one side claims counts half; two papers of record add 20%.
-   Example kept as a check: a large Russian attack on Ukraine with no toll yet ranks above a
-   one-sided military claim of militants killed.
+5. Crisis order: lives first, then recency and reliability; never press coverage. Toll (killed,
+   injured/4) on a log scale weighted x2; an unreported toll counts like ~1 killed (deaths outweigh
+   damage to things); recency halves after 6 h; a toll only one side claims counts half; two papers
+   of record add 20%. Within a conflict, the deadliest event of the day is its line.
 6. A crisis line says who did what (checked against the headlines; mixed-direction stories are left off) ("Ukrainian strikes kill 9 in Russia"), not who says it,
    when most headlines state the event as fact. Never invert who attacked whom.
 7. Sources when a line is opened: the event country's papers of record first (not for
@@ -22,5 +21,7 @@
    line passes the same checks. Refuse clickbait, verdict words, celebrity and sport.
 9. It runs without anyone: free GitHub hosting, free Groq model with a small local fallback,
    loaded only when needed. Keep the footprint small.
-10. Improve continuously with independent reviews; log scores in SCORES.md and changes in
+9b. Selection gives a worldwide perspective, not one country's: never tailor to the owner's country.
+10. Reviewers get how.html and this file before grading.
+11. Improve continuously with independent reviews; log scores in SCORES.md and changes in
     CHANGES.md. Ask the owner before changing any of the points above.
