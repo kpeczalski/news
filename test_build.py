@@ -1112,6 +1112,9 @@ class Direction(unittest.TestCase):
         self.assertEqual(B.direction("Ukrainian strikes kill 9 in Russia", S), -1)
         self.assertEqual(B.direction("Ukraine launches nearly 1,200 drones at Russia", S), -1)
         self.assertEqual(B.direction("Russia shoots down 1,198 drones in one of Ukraine's largest attacks", S), -1)
+        G = B.SIDES["Israel and the Palestinian territories"]
+        self.assertEqual(B.direction("6 Palestinians killed in Israeli strikes across Gaza", G), 1)
+        self.assertEqual(B.direction("Israeli strike to Gaza hospital kills 6, injures 28", G), 1)
 
 
 if __name__ == "__main__":

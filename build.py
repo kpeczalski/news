@@ -1355,7 +1355,8 @@ NUM_DISPLAY = {w: d for w, d in NUMWORDS.items() if w != "one"}      # "one" is 
 
 TOLL_RE = re.compile(r"\b(\d[\d,]*)(?:\s*[-–]\s*\d[\d,]*)?\s+(?:[A-Za-z'-]+\s+){0,3}?"
                      r"(dead|killed|deaths|die|died|injured|wounded|hurt|casualties)\b"
-                     r"|\b(kills?|killing|injures?|wounds?)\s+(?:at least\s+)?(\d[\d,]*)", re.I)
+                     r"|\b(kills?|killing|injures?|injure|wounds?)\s+(?:at least\s+|around\s+|about\s+|nearly\s+|"
+                     r"over\s+|more than\s+)?(\d[\d,]*)", re.I)
 
 
 def toll(titles):
@@ -1400,6 +1401,7 @@ ACT_WORDS = set("""attack attacks attacked launches launched launch strike strik
 shells shelled bombs bombed pounds raid raids drones drone missiles missile barrage kills killed kill""".split())
 
 
+PASSIVE = {"killed", "injured", "wounded", "hurt", "hit", "struck", "bombed", "shelled", "attacked", "targeted"}
 DEFEND = {"downs", "downed", "intercepts", "intercepted", "repels", "repelled", "shoots", "shot", "destroys",
           "destroyed", "repel", "intercept"}
 
@@ -1416,6 +1418,13 @@ def direction(title, sides):
         return -direction(" ".join(w for w in words if w not in DEFEND and w != "down"), sides)
     before, after = set(words[:act]), set(words[act + 1:])
     a, b = sides
+    if words[act] in PASSIVE and after & (a | b):
+        # "6 Palestinians killed in Israeli strikes": the side named after a passive verb acted
+        for w in words[act + 1:]:                     # the first side named after it
+            if w in a:
+                return 1
+            if w in b:
+                return -1
     if before & a and not before & b and after & b:
         return 1
     if before & b and not before & a and after & a:
@@ -1468,6 +1477,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
         if cut and set(raw_words(title_sc[cut.end():])) & {"says", "said", "say", "saying", "according",
                                                            "claims", "claim", "reportedly", "report", "reports"}:
             cut = None                                # never cut off who says the main clause
+        if cut and event and TOLL_RE.search(digits(title_sc[cut.start():])):
+            cut = None                                # nor, on a crisis line, the toll ("..., injures 28")
         # (an allegation in the add-on itself, "... amid alleged affair", may be cut off whole)
         for text in {title_sc, title_sc[:cut.start()].strip() if cut else title_sc}:
             text = re.sub(r"\banother\s+", "", text, flags=re.I)   # "in another car bombing": no earlier story here
@@ -1493,7 +1504,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             # A crisis line says who did what ("Ukrainian drone strike kills 4 in Volgograd"), not who
             # says it: a headline without "says/claims" comes first when one passes.
             plain = not (event and rw & SPEECH)
-            told = not event or bool(TOLL_RE.search(digits(text)))   # a crisis line keeps its toll when one is given
+            # a crisis line keeps its toll, killed and injured, when the headlines give it
+            told = 0 if not event else len(TOLL_RE.findall(digits(text)))
             ranked.append(((not accuses, plain, told, not amid, enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
@@ -1547,7 +1559,11 @@ def add_sentences(state, lines, picks, started):
         event = l["section"] == "ongoing"
         if event and claim and sum(1 for t in titles if not set(raw_words(t)) & HEDGE) >= 0.5 * len(titles):
             claim = False                             # most headlines state the event as fact
-        picked = common_headline(titles, ckeys, claim, renowned, l["text"], negate0, persons, event)
+        counted = l["text"]
+        if event:                                     # the toll most headlines give counts as counted here
+            k, h = toll(titles)
+            counted += "".join(" %d" % n for n in (k, h) if n)
+        picked = common_headline(titles, ckeys, claim, renowned, counted, negate0, persons, event)
         if picked and not name_ok and set(raw_words(picked)) & set(persons):
             picked = ""                               # a small story names no person
         if picked and disputed and not set(raw_words(picked)) & DENIAL:
@@ -1972,7 +1988,11 @@ def render(state, now, cmap, built):
             # people killed or injured first (deaths outweigh damage to things), then the widest reported
             k, h = toll([t[0] for t in stories[item[1]]["ti"].values()])
             return k + h / 4, countries(stories[item[1]]), item[0]
-        ranked_items = sorted((it for it in items if it[0] >= 4), key=rank, reverse=True)
+        # Only events reported about as widely as the conflict's main event: a cumulative figure in a few
+        # outlets ("245 children killed since ...") is not the day's event.
+        widest = max((countries(stories[it[1]]) for it in items), default=0)
+        ranked_items = sorted((it for it in items if it[0] >= 4
+                               and countries(stories[it[1]]) >= max(5, 0.25 * widest)), key=rank, reverse=True)
         best, sid, _ = ranked_items[0] if ranked_items else (0, None, 0)
         backups = [it[1] for it in ranked_items[1:3]]
         if sid is None or (not worldwide_enough(stories[sid]) and days_on < 3):

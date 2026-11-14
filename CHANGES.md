@@ -254,3 +254,4 @@ After an independent grade of the live page (5 out of 10):
 - Who-attacked-whom check extended to the Iran war (US/Israel vs Iran): a line telling both directions is left off.
 - Crises: any person killed or injured (even without a number) ranks above harm to things; "another" is dropped from headlines instead of refusing them (keeps "Former Ukrainian prime minister's adviser injured in Moscow car bombing").
 - Exceptional domestic events (1,000+ outlets, e.g. FAA grounding all US flights, 1,550 outlets in 53 countries) are no longer held back as domestic news.
+- Crisis lines: tolls in an add-on (", injures 28") are no longer cut off; passive headlines ("6 Palestinians killed in Israeli strikes") read the right attacker; within a conflict, cumulative figures in a few outlets are not taken as the day's event; "injure around 20" parsed.
