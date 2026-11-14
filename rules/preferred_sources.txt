@@ -1,0 +1,73 @@
+# Outlets shown first among a story's sources, and whose headline is preferred when a line falls
+# back to a real headline. Order matters: top of the list comes first. One domain per line.
+# First widely read newspapers of record from several countries, then the news agencies,
+# then public broadcasters. After this list, sources are ordered by outlet size.
+# "Reliable" and "neutral" are judgments; edit this list freely. It does not affect which stories
+# are chosen or how they are ranked.
+nytimes.com
+theguardian.com
+ft.com
+wsj.com
+washingtonpost.com
+economist.com
+lemonde.fr
+elpais.com
+spiegel.de
+bloomberg.com
+scmp.com
+thehindu.com
+japantimes.co.jp
+straitstimes.com
+hs.fi
+# papers of record by country: listed after the above, but first for news from their own country
+irishtimes.com
+rte.ie
+nos.nl
+dutchnews.nl
+nzz.ch
+corriere.it
+lefigaro.fr
+faz.net
+sueddeutsche.de
+lanacion.com.ar
+elcomercio.pe
+folha.uol.com.br
+eluniversal.com.mx
+theglobeandmail.com
+smh.com.au
+dawn.com
+haaretz.com
+timesofisrael.com
+nation.africa
+dailymaverick.co.za
+premiumtimesng.com
+kyivindependent.com
+themoscowtimes.com
+koreaherald.com
+yna.co.kr
+asahi.com
+mainichi.jp
+bangkokpost.com
+thejakartapost.com
+rappler.com
+# news agencies (their own sites, then their copy reprinted on other sites)
+reuters.com
+apnews.com
+afp.com
+wire.reprint
+# public broadcasters
+bbc.com
+bbc.co.uk
+dw.com
+france24.com
+npr.org
+pbs.org
+yle.fi
+cbc.ca
+abc.net.au
+nhk.or.jp
+swissinfo.ch
+euronews.com
+aljazeera.com
+rfi.fr
+kyodonews.net

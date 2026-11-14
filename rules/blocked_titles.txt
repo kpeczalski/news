@@ -1,0 +1,34 @@
+# Headlines matching any of these patterns are ignored (not news events, or mass-produced templates).
+# One regular expression per line, case-insensitive. This file is published on the site.
+\bhoroscopes?\b
+\b(lottery|powerball|mega millions|lotto)\b
+\bshares (sold|bought|acquired|purchased) by\b
+\b(buys|sells|acquires|purchases) [\d,]+ shares\b
+\b(stock position|stock holdings|short interest|price target)\b
+\bobituar(y|ies)\b
+\b(crossword|wordle|sudoku)\b
+\b(promo|coupon|discount) codes?\b
+\bweather forecast\b
+# Commentary and explainers are not events.
+\b(what (it|this|that) means|what to know|what we know|things to know|takeaways?|explainer|explained|fact check)\b
+\b(analysis|opinion|editorial|commentary|column|letters? to the editor|podcast|newsletter|live blog|live updates?|in pictures|photos:|watch:)\b
+\bthrough (the )?lens\b
+^(why|how|who is|who was|what is|what are|here's|here is|meet)\b
+# Sport and entertainment are left out.
+\b(premier league|champions league|europa league|la liga|serie a|bundesliga|ligue 1|world cup|grand prix|formula (1|one)|grand slam|wimbledon|super bowl|playoffs?|semi-?finals?|quarter-?finals?|test match|olympics?)\b
+\b(nba|nfl|nhl|mlb|mls|uefa|fifa|ufc|wwe|pga|atp|wta|ipl|nascar|motogp)\b
+\b(head coach|manager sacked|sacks? (manager|coach|boss)|fires? (coach|manager)|goalkeeper|striker|midfielder|quarterback|touchdown|hat-?trick|cricket|rugby|tennis|boxing|football club|\bfc\b)\b
+\b(box office|trailer|album|grammys?|oscars?|emmys?|golden globes?|red carpet|reality (tv|show)|netflix|season finale|celebrity|royal visit|hospice visit)\b
+\b(usmnt|man(chester)? (united|city|utd)|real madrid|fc barcelona|bayern munich|liverpool fc|arsenal fc|chelsea fc|juventus|coach(es|ed|ing)?|goals?|league title|transfer window|world series|stanley cup)\b
+\b(drummer|guitarist|singer|rapper|actors?|actress|band|pop star|rock star|movie|film|tv series|sitcom|comedian|concert|tour dates|box set|fashion week)\b
+# A question is not a report.
+\?\s*$
+\b(sandpaper\w*|ball-tampering|wickets?|innings|batsm[ae]n|bowlers?|cricketers?)\b
+\b(fires|hits|lashes|snaps|claps) back\b
+\b(ashes|test match|odi|t20|ipl|sheffield shield|baggy green)\b
+\b(memorabilia|sells? (for .{1,20} )?at auction|fetches .{1,20} at auction|star wars|darth vader|lightsaber)\b
+\b(announces|reports) (its )?(first|second|third|fourth|q[1-4]) quarter( \d{4})? (financial )?results\b
+\bfinancial results\b
+\b(daughter|son|wife|husband|mother|father|sister|brother) of [A-Z][\w-]+ [A-Z][\w-]+,? (dies|dead|has died)\b
+\band other ([\w-]+ )?news\b
+\b(news|world) (roundup|round-up|digest|briefing|in brief)\b
