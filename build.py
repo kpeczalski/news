@@ -1385,6 +1385,8 @@ def toll(titles):
 SIDES = {
     "Russia–Ukraine war": ({"russia", "russian", "russians", "moscow", "kremlin"},
                            {"ukraine", "ukrainian", "ukrainians", "kyiv", "kiev", "zelensky"}),
+    "Iran war": ({"us", "u.s.", "american", "america", "pentagon", "israel", "israeli"},
+                 {"iran", "iranian", "irgc", "tehran"}),
     "Israel and the Palestinian territories": ({"israel", "israeli", "idf"},
                                                {"gaza", "hamas", "palestinian", "palestinians"}),
 }

@@ -251,3 +251,4 @@ After an independent grade of the live page (5 out of 10):
 - Crises: a story belongs to a conflict where it happened OR when most reports name a conflict country (US-Iran clashes over Bahrain = Iran war). Accidents (crash, collision, collapse...) are not crises unless covered in 20+ countries, even in conflict countries. Words of war politics ("war", "military", "ceasefire") no longer make a story a crisis; violent-event words do. Stories that are not crises stay in most covered instead of vanishing.
 - "unprecedented" and "another" refused (hype; assumes context).
 - Crises: lives first (toll weighted x2 on a log scale; no reported toll = ~1 killed, so deaths outweigh infrastructure); within a conflict the deadliest event is shown (owner).
+- Who-attacked-whom check extended to the Iran war (US/Israel vs Iran): a line telling both directions is left off.
