@@ -9,7 +9,7 @@ permissions:
   contents: write                  # to publish the built site to the gh-pages branch
 concurrency:
   group: update
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.event_name == 'push' }}   # a code change replaces a run that is only waiting
 jobs:
   build:
     runs-on: ubuntu-latest
