@@ -247,5 +247,5 @@ After an independent grade of the live page (5 out of 10):
 - Evening review: no labels on lines ("reports disagree" removed, owner rule); the model uses the most-reported number with its source, never a range (rules 28).
 
 ## 2026-11-14, 12:20 (Helsinki)
-- Freshness: GitHub starts scheduled runs only about once an hour (gaps of 45-75 min seen), so each scheduled run now stays up to 45 min and rebuilds after every 15-minute news batch.
+- Freshness: GitHub starts scheduled runs only about once an hour (gaps of 45-75 min seen); each scheduled run publishes once more about 30 minutes later (news at most ~30 min old; a 15-min loop was judged not worth the footprint).
 - Crises: a story belongs to a conflict where it happened OR when most reports name a conflict country (US-Iran clashes over Bahrain = Iran war). Accidents (crash, collision, collapse...) are not crises unless covered in 20+ countries, even in conflict countries. Words of war politics ("war", "military", "ceasefire") no longer make a story a crisis; violent-event words do. Stories that are not crises stay in most covered instead of vanishing.
