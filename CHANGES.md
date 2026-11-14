@@ -256,3 +256,4 @@ After an independent grade of the live page (5 out of 10):
 - Exceptional domestic events (1,000+ outlets, e.g. FAA grounding all US flights, 1,550 outlets in 53 countries) are no longer held back as domestic news.
 - Crisis lines: tolls in an add-on (", injures 28") are no longer cut off; passive headlines ("6 Palestinians killed in Israeli strikes") read the right attacker; within a conflict, cumulative figures in a few outlets are not taken as the day's event; "injure around 20" parsed.
 - Crisis lines add "at least N injured" (the lowest number 2+ headlines give) when outlets disagree on the injured count.
+- Crisis lines prefer the headline naming more of the shared specifics ("Nasser hospital").

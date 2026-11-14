@@ -1506,7 +1506,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             plain = not (event and rw & SPEECH)
             # a crisis line keeps its toll, killed and injured, when the headlines give it
             told = 0 if not event else len(TOLL_RE.findall(digits(text)))
-            ranked.append(((not accuses, plain, told, not amid, enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
+            specific = len(named) if event else 0     # a crisis line names where ("hospital"), not just "Gaza"
+            ranked.append(((not accuses, plain, told, specific, not amid, enough, fits, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
