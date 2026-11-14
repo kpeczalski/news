@@ -8,6 +8,7 @@ B.AI = "off"                       # tests never call a model; the writer is tes
 B.NEW_MIN_SCORE = 0                # most tests use tiny stories; the threshold has its own test
 B.MIN_SPREAD = 0                   # likewise the international floor
 B.DAY_MIN_SCORE = 0
+B.DAY_MIN_COUNTRIES = 0
 B.AI_TRIES = 4                     # tests do not depend on the deployment's settings
 B.COUNTED_MIN_SCORE = 0
 

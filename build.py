@@ -110,6 +110,7 @@ BUDGET = int(os.environ.get("BUDGET_SECONDS", "420"))       # stop taking new sl
 NEW_LINES = int(os.environ.get("NEW_LINES", "5"))            # lines in "new in the last 3 hours"
 DAY_LINES = int(os.environ.get("DAY_LINES", "9"))            # lines in "last 24 hours"
 NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs this much coverage to be listed
+DAY_MIN_COUNTRIES = int(os.environ.get("DAY_MIN_COUNTRIES", "10"))
 DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "12"))  # so does an older one: a short list beats a padded one
 COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "1e9"))  # a line left as counted words: never shown
 ONE_LINE = 80                                 # characters that fit on one line of the page
@@ -217,7 +218,7 @@ rips ripped destroys destroyed epic insane unbelievable incredible amazing horri
 devastating heartbreaking tragic chaos fury furious outrage outraged meltdown nightmare jaw-dropping
 exclusive urgent revealed finally massive huge emotional beloved dramatic iconic heartfelt historic
 stunned furious bizarre chilling brutal savage
-scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense quietly bluntly rekindles heartwarming unprecedented another""".split())   # verdicts, not facts
+scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense quietly bluntly rekindles heartwarming unprecedented another jokes joke laughs""".split())   # verdicts, not facts
 
 NUMWORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7",
             "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12", "thirteen": "13",
@@ -1359,6 +1360,10 @@ TOLL_RE = re.compile(r"\b(\d[\d,]*)(?:\s*[-–]\s*\d[\d,]*)?\s+(?:[A-Za-z'-]+\s+
                      r"over\s+|more than\s+)?(\d[\d,]*)", re.I)
 
 
+NO_HARM = re.compile(r"\bno (one|injuries|injury|casualties|deaths)\b|\bnobody (hurt|injured|killed)\b|"
+                     r"\bunharmed\b|\bwithout injur", re.I)
+
+
 def toll(titles):
     """(killed, injured) as most headlines that give a number state it: the median of each
     headline's figure, the lower end of a range. (0, 0) when no headline gives one."""
@@ -1557,7 +1562,8 @@ def add_sentences(state, lines, picks, started):
         negate0 = bool({"not", "never", "no"} & set((l["key"] + " " + l["text"]).split()))
         # Pick, don't write: a real headline that passes every check is used as printed, and the
         # model is asked only when none does (a small model invents words; a headline cannot).
-        event = l["section"] == "ongoing"
+        accident = sum(1 for t in titles if set(raw_words(t)) & ACCIDENT_WORDS) >= 0.3 * max(1, len(titles))
+        event = l["section"] == "ongoing" or accident     # say the toll: casualties, or none
         if event and claim and sum(1 for t in titles if not set(raw_words(t)) & HEDGE) >= 0.5 * len(titles):
             claim = False                             # most headlines state the event as fact
         counted = l["text"]
@@ -2036,7 +2042,10 @@ def render(state, now, cmap, built):
     for l in lines:
         # A crisis line keeps the toll most headlines give: a line without it is replaced by a real
         # headline that states it, when one passes the checks.
-        if l["section"] == "ongoing" and l["sentence"] and not TOLL_RE.search(digits(l["sentence"])):
+        titles0 = picks[l["id"]][0]
+        accident = sum(1 for t in titles0 if set(raw_words(t)) & ACCIDENT_WORDS) >= 0.3 * max(1, len(titles0))
+        is_event = l["section"] == "ongoing" or accident
+        if is_event and l["sentence"] and not TOLL_RE.search(digits(l["sentence"])):
             titles, _, _, ckeys, renowned, persons = picks[l["id"]]
             k, h = toll(titles)
             if (k, h) != (0, 0):
@@ -2047,7 +2056,7 @@ def render(state, now, cmap, built):
                     l["sentence"], l["by"] = digits(alt), "headline"
         # Injured: when outlets give different numbers, the lowest one they give, as "at least N injured"
         # (2+ headlines must give a number; nothing is added if the line already mentions injuries).
-        if l["section"] == "ongoing" and l["sentence"] and \
+        if is_event and l["sentence"] and \
                 not set(raw_words(l["sentence"])) & {"injured", "injures", "injure", "wounded", "wounds", "hurt"}:
             hurt = []
             for t in picks[l["id"]][0]:
@@ -2057,6 +2066,9 @@ def render(state, now, cmap, built):
                         hurt.append(int((m.group(1) or m.group(4)).replace(",", "")))
             if len(hurt) >= 2 and min(hurt) >= 2:
                 l["sentence"] = l["sentence"].rstrip(".") + ", at least %d injured" % min(hurt)
+            elif accident and not TOLL_RE.search(digits(l["sentence"])) and sum(
+                    1 for t in titles0 if NO_HARM.search(t)) >= 2:
+                l["sentence"] = l["sentence"].rstrip(".") + ", no injuries reported"
         sides = SIDES.get(l.get("_where"))
         if l["section"] != "ongoing" or not sides or not l["sentence"]:
             continue
@@ -2082,6 +2094,8 @@ def render(state, now, cmap, built):
         region = REGION_OF.get(where or "", "other")
         if l["section"] == "ongoing" and where in shown_crises:
             continue                                  # one line per conflict
+        if l["section"] == "day" and l["countries"] < DAY_MIN_COUNTRIES:
+            continue                                  # world news: carried in many countries, not one or two
         if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
                 or (region != "other" and per_region[region] >= PER_REGION):
             continue
