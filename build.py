@@ -1365,7 +1365,8 @@ NO_HARM = re.compile(r"\bno (one|injuries|injury|casualties|deaths)\b|\bnobody (
                      r"\bunharmed\b|\bwithout injur", re.I)
 
 
-NO_DEATH = re.compile(r"\bno (deaths?|fatalities|one (was )?killed)\b|\bwithout (deaths|fatalities)\b", re.I)
+NO_DEATH = re.compile(r"\bno (deaths?|fatalities|one (was )?killed)\b|\bwithout (deaths|fatalities)\b|"
+                      r"\ball\b.{0,60}\bsurviv", re.I)
 
 
 def toll(titles):
@@ -1514,7 +1515,7 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             # says it: a headline without "says/claims" comes first when one passes.
             plain = not (event and rw & SPEECH)
             # a crisis line keeps its toll, killed and injured, when the headlines give it
-            told = 0 if not event else len(TOLL_RE.findall(digits(text)))
+            told = 0 if not event else len(TOLL_RE.findall(digits(text))) + (2 if NO_DEATH.search(text) else 0)
             specific = len(named) if event else 0     # a crisis line names where ("hospital"), not just "Gaza"
             # the scale when outlets give it ("nationwide", "all flights"): it is the news
             scale = bool(rw & {"nationwide", "all", "every", "global", "worldwide", "entire", "countrywide"})
@@ -2051,7 +2052,7 @@ def render(state, now, cmap, built):
         titles0 = picks[l["id"]][0]
         accident = sum(1 for t in titles0 if set(raw_words(t)) & ACCIDENT_WORDS) >= 0.3 * max(1, len(titles0))
         is_event = l["section"] == "ongoing" or accident
-        if is_event and l["sentence"] and not TOLL_RE.search(digits(l["sentence"])):
+        if is_event and l["sentence"] and not TOLL_RE.search(digits(l["sentence"])) and not NO_DEATH.search(l["sentence"]):
             titles, _, _, ckeys, renowned, persons = picks[l["id"]]
             k, h = toll(titles)
             if (k, h) != (0, 0):
@@ -2065,13 +2066,18 @@ def render(state, now, cmap, built):
         if is_event and l["sentence"] and \
                 not set(raw_words(l["sentence"])) & {"injured", "injures", "injure", "wounded", "wounds", "hurt"}:
             hurt = []
+            line_dead = toll([l["sentence"]])[0]
             for t in picks[l["id"]][0]:
+                if line_dead and toll([t])[0] != line_dead:
+                    continue                          # another event's figures ("kills 6" is not "kills 2")
                 for m in TOLL_RE.finditer(digits(t)):
                     word = (m.group(2) or m.group(3) or "").lower()
                     if word.startswith(("injur", "wound", "hurt")):
                         hurt.append(int((m.group(1) or m.group(4)).replace(",", "")))
             if len(hurt) >= 2 and min(hurt) >= 2:
-                if accident and toll(titles0)[0] == 0 and sum(1 for t in titles0 if NO_DEATH.search(t)) >= 2:
+                if NO_DEATH.search(l["sentence"]):
+                    l["sentence"] = l["sentence"].rstrip(".") + "; at least %d injured" % min(hurt)
+                elif accident and toll(titles0)[0] == 0 and sum(1 for t in titles0 if NO_DEATH.search(t)) >= 2:
                     # 2+ headlines say no one died, none reports a death
                     l["sentence"] = l["sentence"].rstrip(".") + "; no one killed, at least %d injured" % min(hurt)
                 else:

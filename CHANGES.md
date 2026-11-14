@@ -261,3 +261,4 @@ After an independent grade of the live page (5 out of 10):
 - Accidents: ", no deaths" when 2+ headlines say so explicitly and none reports a death.
 - Lines prefer the scale when outlets give it ("FAA lifts nationwide ground stop..."), and short over long ("Tanker collides with cruise ship ..., at least 32 injured, no deaths").
 - Bombs, blasts, explosions, shootings, assassinations count as crisis events (the Moscow bombings moved to crises). Stories with 20%+ celebrity-tagged reports are left off (was 40%).
+- Survival headlines ("All passengers and crew ... survive") count as stating the toll. "At least N injured" only from headlines with the same death count as the line. News roundups ("..., and other Mideast news") blocked.

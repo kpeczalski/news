@@ -30,3 +30,5 @@
 \b(announces|reports) (its )?(first|second|third|fourth|q[1-4]) quarter( \d{4})? (financial )?results\b
 \bfinancial results\b
 \b(daughter|son|wife|husband|mother|father|sister|brother) of [A-Z][\w-]+ [A-Z][\w-]+,? (dies|dead|has died)\b
+\band other ([\w-]+ )?news\b
+\b(news|world) (roundup|round-up|digest|briefing|in brief)\b
