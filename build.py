@@ -2044,6 +2044,18 @@ def render(state, now, cmap, built):
                 alt = common_headline(titles, ckeys, False, renowned, counted, False, persons, True)
                 if alt and TOLL_RE.search(digits(alt)):
                     l["sentence"], l["by"] = digits(alt), "headline"
+        # Injured: when outlets give different numbers, the lowest one they give, as "at least N injured"
+        # (2+ headlines must give a number; nothing is added if the line already mentions injuries).
+        if l["section"] == "ongoing" and l["sentence"] and \
+                not set(raw_words(l["sentence"])) & {"injured", "injures", "injure", "wounded", "wounds", "hurt"}:
+            hurt = []
+            for t in picks[l["id"]][0]:
+                for m in TOLL_RE.finditer(digits(t)):
+                    word = (m.group(2) or m.group(3) or "").lower()
+                    if word.startswith(("injur", "wound", "hurt")):
+                        hurt.append(int((m.group(1) or m.group(4)).replace(",", "")))
+            if len(hurt) >= 2 and min(hurt) >= 2:
+                l["sentence"] = l["sentence"].rstrip(".") + ", at least %d injured" % min(hurt)
         sides = SIDES.get(l.get("_where"))
         if l["section"] != "ongoing" or not sides or not l["sentence"]:
             continue
