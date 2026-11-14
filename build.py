@@ -39,6 +39,7 @@ AGENCY_WEIGHT = 0.3                           # a reprint counts this much once 
 MIN_SPREAD = float(os.environ.get("MIN_SPREAD", "2.5"))   # to be listed: this many countries' worth of even coverage...
 MIN_OTHER_LANG = 3                            # ...or this many outlets in other languages
 NO_OTHER_LANG = 0.6                           # a story no outlet in another language carries keeps this share
+DOMESTIC_EXCEPTIONAL = 1000                   # ...or when this many outlets carry it: exceptional anywhere
 DOMESTIC_KEEP = 50                            # domestic news is listed only if this many outlets in other languages carry it
 LIFE_WEIGHT = 0.5                             # a story whose reports mostly tell of deaths counts up to 1.5 times
 DEATH_WORDS = set("killed kills kill dead dies died death deaths wounded injured injures casualties massacre".split())
@@ -1705,8 +1706,8 @@ def render(state, now, cmap, built):
         english = sum(1 for v in s["d"].values() if v[1] > since)
         other = sum(1 for v in s["f"].values() if v[1] > since)
         spread = max(SPREAD_FLOOR, min(1.0, spread_of(s) / SPREAD_FULL))
-        if domestic(s):
-            spread *= DOMESTIC_WEIGHT
+        if domestic(s) and s["n"] < DOMESTIC_EXCEPTIONAL:
+            spread *= DOMESTIC_WEIGHT                 # (not for an exceptional event: all flights grounded)
         c = countries(s)
         reprint = AGENCY_WEIGHT if c >= 3 else REPRINT_WEIGHT
         boost = STATE_BOOST if STATE_WORDS & {FOLD.get(k, k) for k in top_tokens(s)} else 1.0
@@ -1903,7 +1904,7 @@ def render(state, now, cmap, built):
             skip(s, "celebrity"); continue
         if s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]):
             skip(s, "sport"); continue  # sport, by GDELT's topic tags
-        if cmap and domestic(s) and len(s["f"]) < DOMESTIC_KEEP:
+        if cmap and domestic(s) and len(s["f"]) < DOMESTIC_KEEP and s["n"] < DOMESTIC_EXCEPTIONAL:
             skip(s, "domestic"); continue  # domestic news, unless the world's press carries it
         where = event_country(s)
         if where and per_country[where] >= PER_COUNTRY + 1:
