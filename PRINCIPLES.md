@@ -6,7 +6,7 @@
    (`// new in the last 3 hours` appears only when a fresh story grows fast.)
 3. Most covered: ranked by reports weighted by spread across countries (deaths up to 1.5x),
    shown by number of countries. Each line: "N countries · +N outlets/h", counter coloured by pace.
-4. Crises: violent events in places with an ongoing armed conflict (public list of 1,000+
+4. Crises: violent events (not accidents, speeches or war politics) in an ongoing armed conflict (public list of 1,000+
    deaths a year), plus disasters or attacks covered in 20+ countries. Speeches, talks and
    sanctions stay in most covered. One line per conflict (countries of one conflict count as one).
 5. Crisis order is a mix of recency, death toll and reliability, never press coverage:

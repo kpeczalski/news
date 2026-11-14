@@ -42,9 +42,14 @@ NO_OTHER_LANG = 0.6                           # a story no outlet in another lan
 DOMESTIC_KEEP = 50                            # domestic news is listed only if this many outlets in other languages carry it
 LIFE_WEIGHT = 0.5                             # a story whose reports mostly tell of deaths counts up to 1.5 times
 DEATH_WORDS = set("killed kills kill dead dies died death deaths wounded injured injures casualties massacre".split())
-CRISIS_WORDS = set("""war attack attacks attacked barrage airstrike airstrikes bombing shelling missile missiles drone
-drones troops military ceasefire hostages hostage refugees famine siege offensive invasion militants fighting
-earthquake flood floods cyclone hurricane typhoon displaced humanitarian genocide gunmen""".split())
+# Words of a violent event or disaster (not of war politics: "war", "military", "ceasefire", "talks"
+# alone do not make an event).
+CRISIS_WORDS = set("""attack attacks attacked barrage airstrike airstrikes strike strikes struck bombing bombed
+shelling shelled missile missiles drone drones offensive invasion militants fighting clashes gunmen ambush
+earthquake flood floods cyclone hurricane typhoon famine massacre""".split())
+# An accident is not a crisis, even where there is a war, unless the world covers it.
+ACCIDENT_WORDS = set("""crash crashes crashed collision collides collided accident accidents collapse collapses
+collapsed derails derailed capsizes capsized stampede blaze""".split())
 CRISIS_SECTION = True
 ONGOING_LINES = 4                             # "ongoing": crises covered most over the last days
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
@@ -1714,11 +1719,25 @@ def render(state, now, cmap, built):
         titles = [t[0] for t in s["ti"].values()]
         return sum(1 for t in titles if set(raw_words(t)) & words) / max(1, len(titles))
 
+    def conflict_of(s):
+        """The armed conflict a story belongs to: where it happened, or a conflict country most of its
+        reports name ("US downs Iranian drones over Bahrain" belongs to the Iran war). None otherwise."""
+        where = event_country(s)
+        if where in CONFLICT:
+            return CONFLICT[where]
+        named = sorted(((n, e[2:]) for e, n in s["e"].items()
+                        if e.startswith("K:") and e[2:] in CONFLICT and n >= 0.3 * s["n"]), reverse=True)
+        return CONFLICT[named[0][1]] if named else None
+
     def is_crisis(s):
-        """War, attack or disaster, by the story's own headlines: these go to the crises section.
-        Speeches about a crisis ("... calls it genocide") are not events and stay in the main list."""
+        """A violent event in an armed conflict, or a disaster or attack the world covers (20+
+        countries), by the story's own headlines: these go to the crises section. Speeches, talks
+        and accidents are not crisis events; they stay in the main list."""
         return CRISIS_SECTION and headline_share(s, CRISIS_WORDS | VIOLENT_DEATH) >= 0.4 \
-            and headline_share(s, {"calls", "urges", "accuses", "condemns", "slams", "warns", "vows"}) < 0.4
+            and headline_share(s, {"calls", "urges", "accuses", "condemns", "slams", "warns", "vows",
+                                   "presses"}) < 0.5 \
+            and (headline_share(s, ACCIDENT_WORDS) < 0.3 or countries(s) >= BIG_DISASTER_COUNTRIES) \
+            and (conflict_of(s) is not None or countries(s) >= BIG_DISASTER_COUNTRIES)
 
     def event_country(s):
         codes = [(c, e[2:]) for e, c in s["e"].items() if e.startswith("K:")]
@@ -1917,7 +1936,7 @@ def render(state, now, cmap, built):
         where = event_country(s)
         if not where or not is_crisis(s) or len(members(s)) < MIN_OUTLETS:
             continue
-        crisis_today.setdefault(CONFLICT.get(where, where), []).append((score(s)[0], sid, len(members(s))))
+        crisis_today.setdefault(conflict_of(s) or where, []).append((score(s)[0], sid, len(members(s))))
     keep = {time.strftime("%Y-%m-%d", time.gmtime((now - 96 * d) * SLOT)) for d in range(ONGOING_DAYS)}
     for where in list(tally):
         tally[where] = {d: v for d, v in tally[where].items() if d in keep and isinstance(v, list)}

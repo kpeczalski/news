@@ -13,7 +13,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 14
+    timeout-minutes: 60
     env:
       REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
       AI_MODEL: qwen3:1.7b          # small model on the server's processor; only for stories no headline fits
@@ -70,3 +70,20 @@ jobs:
           git add --all
           git commit --quiet --message "update $(date -u +%Y-%m-%dT%H:%MZ)"
           git push --quiet --force "$REMOTE" gh-pages
+      - name: Keep updating every 15 minutes until the next trigger
+        # GitHub starts scheduled runs only about once an hour, so one run keeps the page fresh for
+        # that hour: it waits (idle) for each new 15-minute news batch, rebuilds and publishes.
+        if: github.event_name != 'push'
+        run: |
+          start=$(date +%s)
+          for i in 1 2 3; do
+            now=$(date +%s); next=$(( (now / 900 + 1) * 900 + 180 ))      # 3 minutes after the next batch
+            [ $(( next - start )) -gt 2700 ] && break                       # stop within 45 minutes
+            sleep $(( next - now ))
+            rm -rf prev && mv out prev
+            (cd src && STATE_DIR="$PWD/../prev" OUT_DIR="$PWD/../out" python3 build.py) || { mv prev out; continue; }
+            (cd out && rm -rf .git && git init --quiet --initial-branch gh-pages \
+              && git config user.name "news" && git config user.email "news@users.noreply.github.com" \
+              && git add --all && git commit --quiet --message "update $(date -u +%Y-%m-%dT%H:%MZ)" \
+              && git push --quiet --force "$REMOTE" gh-pages) || true
+          done
