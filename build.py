@@ -2066,6 +2066,10 @@ def render(state, now, cmap, built):
                         hurt.append(int((m.group(1) or m.group(4)).replace(",", "")))
             if len(hurt) >= 2 and min(hurt) >= 2:
                 l["sentence"] = l["sentence"].rstrip(".") + ", at least %d injured" % min(hurt)
+                if accident and len(titles0) >= 10 and not any(
+                        set(raw_words(t)) & {"killed", "kills", "kill", "dead", "dies", "died", "death", "deaths",
+                                              "fatal", "fatalities", "bodies"} for t in titles0):
+                    l["sentence"] += ", no deaths reported"   # none of its headlines reports a death
             elif accident and not TOLL_RE.search(digits(l["sentence"])) and sum(
                     1 for t in titles0 if NO_HARM.search(t)) >= 2:
                 l["sentence"] = l["sentence"].rstrip(".") + ", no injuries reported"
