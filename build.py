@@ -1452,8 +1452,13 @@ def digits(text):
     return re.sub(r"\b(%s)\b" % "|".join(NUM_DISPLAY), lambda m: NUM_DISPLAY[m.group(1).lower()], text, flags=re.I)
 
 
+RESOLVE = {"lifts", "lifted", "lift", "resume", "resumes", "resumed", "reopens", "reopened", "restored",
+           "restores", "ends", "ended", "released", "freed", "rescued", "contained", "extinguished"}
+RECENT_TITLES = {}                            # story id -> its headlines from the last 6 hours
+
+
 def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=None, must_negate=False,
-                    persons=(), event=False):
+                    persons=(), event=False, recent=None):
     """Fallback when no model sentence passes: a real headline that is short and plain and passes
     the same word, number and negation checks as a model sentence. A renowned outlet's headline
     comes first (renowned maps title -> rank); otherwise the one printed by the most outlets."""
@@ -1472,6 +1477,7 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     lower_seen = {w for w in low if low[w] >= cap[w]}
     small = {"a", "an", "the", "of", "in", "on", "at", "to", "for", "by", "with", "from", "over", "into"}
     n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
+    res_share = sum(1 for t in titles if set(raw_words(t)) & RESOLVE) / max(1, len(titles))
     for title, n in Counter(titles).items():
         if n < 2 and title not in renowned and n_wordings < 6:
             continue                                  # in a big story every word is checked against many
@@ -1519,7 +1525,10 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             specific = len(named) if event else 0     # a crisis line names where ("hospital"), not just "Gaza"
             # the scale when outlets give it ("nationwide", "all flights"): it is the news
             scale = bool(rw & {"nationwide", "all", "every", "global", "worldwide", "entire", "countrywide"})
-            ranked.append(((not accuses, plain, told, scale, fits, specific, not amid, enough, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
+            # the latest development first ("FAA lifts ground stop" over the morning's "FAA issues ground stop")
+            fresh = recent is None or title in recent
+            resolved = bool(rw & RESOLVE) if res_share >= 0.15 else False   # the outcome, once outlets report it
+            ranked.append(((not accuses, resolved, fresh, plain, told, scale, fits, specific, not amid, enough, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
@@ -1577,7 +1586,8 @@ def add_sentences(state, lines, picks, started):
         if event:                                     # the toll most headlines give counts as counted here
             k, h = toll(titles)
             counted += "".join(" %d" % n for n in (k, h) if n)
-        picked = common_headline(titles, ckeys, claim, renowned, counted, negate0, persons, event)
+        picked = common_headline(titles, ckeys, claim, renowned, counted, negate0, persons, event,
+                                 RECENT_TITLES.get(l["id"]))
         if picked and not name_ok and set(raw_words(picked)) & set(persons):
             picked = ""                               # a small story names no person
         if picked and disputed and not set(raw_words(picked)) & DENIAL:
@@ -1901,6 +1911,8 @@ def render(state, now, cmap, built):
                 len({d for d in s["ti"] if source_rank(d, s["ti"][d][1]) < pref_rank("reuters.com")}) < 2 \
                 and "claim" not in tags:
             tags.insert(0, "claim")
+        newest = max(t[2] for t in s["ti"].values())
+        RECENT_TITLES[sid] = {t[0] for t in s["ti"].values() if t[2] >= newest - 24}
         picks[sid] = (all_titles, shown, names_ok(s, now) or not has_person(s), ckeys, renowned, persons)
         firsts = [v[0] for v in mem.values()]
         line = {
