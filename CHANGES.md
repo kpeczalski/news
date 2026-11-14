@@ -260,3 +260,4 @@ After an independent grade of the live page (5 out of 10):
 - Most covered needs 10+ countries (drops soft single-country items like "King Charles jokes with Elton John"); "jokes/laughs" refused. Accidents state casualties ("at least 32 injured") or "no injuries reported" when 2+ headlines say so.
 - Accidents: ", no deaths" when 2+ headlines say so explicitly and none reports a death.
 - Lines prefer the scale when outlets give it ("FAA lifts nationwide ground stop..."), and short over long ("Tanker collides with cruise ship ..., at least 32 injured, no deaths").
+- Bombs, blasts, explosions, shootings, assassinations count as crisis events (the Moscow bombings moved to crises). Stories with 20%+ celebrity-tagged reports are left off (was 40%).

@@ -47,7 +47,8 @@ DEATH_WORDS = set("killed kills kill dead dies died death deaths wounded injured
 # alone do not make an event).
 CRISIS_WORDS = set("""attack attacks attacked barrage airstrike airstrikes strike strikes struck bombing bombed
 shelling shelled missile missiles drone drones offensive invasion militants fighting clashes gunmen ambush
-earthquake flood floods cyclone hurricane typhoon famine massacre""".split())
+earthquake flood floods cyclone hurricane typhoon famine massacre bomb bombs bombings blast blasts explosion
+explosions explosive assassination assassinated shooting gunfire""".split())
 # An accident is not a crisis, even where there is a war, unless the world covers it.
 ACCIDENT_WORDS = set("""crash crashes crashed collision collides collided accident accidents collapse collapses
 collapsed derails derailed capsizes capsized stampede blaze""".split())
@@ -1928,7 +1929,7 @@ def render(state, now, cmap, built):
             skip(s, "not worldwide"); continue
         if is_crisis(s):
             skip(s, "crises section"); continue
-        if s["e"].get("T:celeb", 0) >= 0.4 * max(1, s["n"]):
+        if s["e"].get("T:celeb", 0) >= 0.2 * max(1, s["n"]):
             skip(s, "celebrity"); continue
         if s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]):
             skip(s, "sport"); continue  # sport, by GDELT's topic tags
