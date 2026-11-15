@@ -51,7 +51,7 @@ earthquake flood floods cyclone hurricane typhoon famine massacre bomb bombs bom
 explosions explosive assassination assassinated shooting gunfire""".split())
 # An accident is not a crisis, even where there is a war, unless the world covers it.
 ACCIDENT_WORDS = set("""crash crashes crashed collision collides collided accident accidents collapse collapses
-collapsed derails derailed capsizes capsized stampede blaze""".split())
+collapsed derails derailed capsizes capsized stampede blaze mine miners methane leak""".split())
 CRISIS_SECTION = True
 ONGOING_LINES = 4                             # "ongoing": crises covered most over the last days
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
@@ -1307,6 +1307,12 @@ def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False
     if persons and set(keys) & set(persons) and rawset & WRONGDOING and not rawset & ATTRIBUTED:
         return "unattributed allegation about a person"
     # Job status ("former", "ex") must be what most headlines say, not one outlet's view.
+    # A list of shared words is not a sentence ("Kushner says Europe Russia peace talks"): five or more
+    # words, no small grammar words, and at most one word outside the shared ones.
+    plain_words = [w for w in raw_words(sentence)]
+    if consensus_keys and len(plain_words) >= 5 and not set(plain_words) & STOP and \
+            sum(1 for _, k, _ in scan(sentence) if k not in set(consensus_keys)) <= 1:
+        return "a list of words, not a sentence"
     for w in rawset & {"former", "ex"}:
         if raw_support[w] < max(2, 0.4 * len(distinct)):
             return "status word not common: " + w
