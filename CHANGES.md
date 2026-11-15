@@ -264,3 +264,7 @@ After an independent grade of the live page (5 out of 10):
 - Survival headlines ("All passengers and crew ... survive") count as stating the toll. "At least N injured" only from headlines with the same death count as the line. News roundups ("..., and other Mideast news") blocked.
 - Lines follow the latest development: once 15%+ of headlines report the outcome (lifted, resumed, restored, freed...), a headline with it comes first; then headlines from the last 6 hours ("FAA lifts nationwide ground stop for flights").
 - Daily review: a named person resigning/arrested/dying is never in model words: a real passing headline, or the line is left off.
+
+## 2026-11-15 (Helsinki)
+- Colon wording for accidents with no deaths ("...in New Orleans: 32 injured, no deaths"); the injured number most headlines give, "at least" the lowest only when they differ.
+- Free health check on every build (no model): too few lines, stale news, roundup/analysis wording, long lines, crisis lines missing their toll or in model words; listed as "warnings" in diag.json and read by a morning check.

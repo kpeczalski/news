@@ -1684,6 +1684,39 @@ def add_sentences(state, lines, picks, started):
     return {"model": model or "", "sentences": used, "examples": len(EXAMPLES)}
 
 
+BAD_LINE = re.compile(r"\band other ([\w-]+ )?news\b|\b(roundup|round-up|live updates?|as it happened|"
+                      r"what we know|explained|opinion|analysis)\b", re.I)
+
+
+def health(data, state):
+    """Free checks on every build, no model: signs of a broken or weak page, for the daily review."""
+    w = []
+    lines = data.get("lines", [])
+    day = [l for l in lines if l["section"] == "day"]
+    if len(day) < 5:
+        w.append("only %d most-covered lines" % len(day))
+    if data.get("data_until"):
+        lag = (time.time() - time.mktime(time.strptime(data["data_until"], "%Y-%m-%dT%H:%M:%SZ")) + time.timezone) / 60
+        if lag > 90:
+            w.append("news is %d minutes old" % lag)
+    for l in lines:
+        t = l.get("sentence") or ""
+        if not t:
+            w.append("no sentence: " + l["key"])
+            continue
+        if BAD_LINE.search(t):
+            w.append("roundup/analysis wording: " + t)
+        if len(t) > 110:
+            w.append("long line (%d chars): %s" % (len(t), t))
+        heads = [h["t"] for h in l.get("headlines", [])]
+        if l["section"] == "ongoing" and toll(heads) != (0, 0) and not TOLL_RE.search(digits(t)) \
+                and not NO_DEATH.search(t):
+            w.append("crisis line without the toll its headlines give: " + t)
+        if l["section"] == "ongoing" and l.get("by") == "model":
+            w.append("crisis line in model words: " + t)
+    return w
+
+
 def render(state, now, cmap, built):
     stories = state["stories"]
 
@@ -2094,13 +2127,16 @@ def render(state, now, cmap, built):
                     if word.startswith(("injur", "wound", "hurt")):
                         hurt.append(int((m.group(1) or m.group(4)).replace(",", "")))
             if len(hurt) >= 2 and min(hurt) >= 2:
-                if NO_DEATH.search(l["sentence"]):
-                    l["sentence"] = l["sentence"].rstrip(".") + "; at least %d injured" % min(hurt)
+                # the number most headlines give; "at least" the lowest when they differ by much
+                common = Counter(hurt).most_common(1)[0]
+                inj = ("%d injured" % common[0]) if common[1] >= 0.6 * len(hurt) else ("at least %d injured" % min(hurt))
+                base = l["sentence"].rstrip(".")
+                if NO_DEATH.search(base):
+                    l["sentence"] = base + "; " + inj
                 elif accident and toll(titles0)[0] == 0 and sum(1 for t in titles0 if NO_DEATH.search(t)) >= 2:
-                    # 2+ headlines say no one died, none reports a death
-                    l["sentence"] = l["sentence"].rstrip(".") + "; no one killed, at least %d injured" % min(hurt)
+                    l["sentence"] = base + ": " + inj + ", no deaths"   # 2+ headlines say so, none reports one
                 else:
-                    l["sentence"] = l["sentence"].rstrip(".") + ", at least %d injured" % min(hurt)
+                    l["sentence"] = base + ", " + inj
             elif accident and not TOLL_RE.search(digits(l["sentence"])) and sum(
                     1 for t in titles0 if NO_HARM.search(t)) >= 2:
                 l["sentence"] = l["sentence"].rstrip(".") + ", no injuries reported"
@@ -2300,6 +2336,7 @@ def main():
         for ex in state.get("ex", []):
             f.write(json.dumps(ex, ensure_ascii=False) + "\n")
     write_json(os.path.join(OUT, "diag.json"), {
+        "warnings": health(data, state),
         "built": data["updated"], "seconds": round(time.time() - started, 1),
         "last": iso(state["last"]), "last_translated": iso(state["last_tr"]),
         "english_records": stats["rows"], "with_title": stats["titled"],
