@@ -256,6 +256,7 @@
     try { localStorage.setItem(SEEN_KEY, JSON.stringify(shown.lines.map(function (l) { return l.id; }))); } catch (e) {}
   }
 
+  if ("serviceWorker" in navigator) { try { navigator.serviceWorker.register("sw.js"); } catch (e) {} }
   getJSON("archive/index.json").then(function (d) { if (Array.isArray(d)) days = d; if (shown) status(shown, route()); })
     .catch(function () {});
   load();
