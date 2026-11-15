@@ -269,3 +269,4 @@ After an independent grade of the live page (5 out of 10):
 - Colon wording for accidents with no deaths ("...in New Orleans: 32 injured, no deaths"); the injured number most headlines give, "at least" the lowest only when they differ.
 - Free health check on every build (no model): too few lines, stale news, roundup/analysis wording, long lines, crisis lines missing their toll or in model words; listed as "warnings" in diag.json and read by a morning check.
 - App icon (same as the desktop one): favicon, home-screen icon (iOS/Android), web app manifest so "Add to Home Screen" opens it like an app.
+- Model prompt: a complete grammatical sentence, never a list of words; rules 29 (model lines rewritten).

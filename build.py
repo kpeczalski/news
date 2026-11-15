@@ -132,7 +132,7 @@ AI_TRIES = int(os.environ.get("AI_TRIES", "4"))             # attempts per story
 AI_WORDS = 12                                               # longest sentence accepted
 AI_HEADLINES = 8                                            # headlines shown to the model per story
 AI_BUDGET = 90                                             # seconds per run spent on sentences
-AI_RULES = 28                                                # raise when the prompt or checker changes: retries every line
+AI_RULES = 29                                                # raise when the prompt or checker changes: retries every line
 AI_PROMPT = """You compress news headlines about one event into one plain sentence.
 Rules:
 - Use only facts, names and numbers that appear in the headlines. Add nothing.
@@ -140,6 +140,9 @@ Rules:
   it: who, what, where, and what it is about (for example "on Ukraine peace talks").
 - One clause only. No add-ons starting with "as", "after", "amid", "while" or "and".
 - Leave out background, reactions and consequences.
+- A complete, grammatical sentence a reader understands alone, never a list of words
+  ("Kushner says Europe Russia peace talks" is wrong). If the headlines are about different
+  events, write about the one most of them share.
 - Write it as subject, verb, object: who did what to whom, in that order, with the right small
   words ("strike on a hospital", not "strike to a hospital"). No "-ing" add-ons such as
   "drawing", "prompting", "sparking", "raising".
