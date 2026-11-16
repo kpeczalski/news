@@ -32,3 +32,4 @@
 \b(daughter|son|wife|husband|mother|father|sister|brother) of [A-Z][\w-]+ [A-Z][\w-]+,? (dies|dead|has died)\b
 \band other ([\w-]+ )?news\b
 \b(news|world) (roundup|round-up|digest|briefing|in brief)\b
+(?<!crown )\b(prince|princess|duke|duchess)\b

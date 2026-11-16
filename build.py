@@ -2176,7 +2176,7 @@ def render(state, now, cmap, built):
         region = REGION_OF.get(where or "", "other")
         if l["section"] == "ongoing" and where in shown_crises:
             continue                                  # one line per conflict
-        if l["section"] == "day" and l["countries"] < DAY_MIN_COUNTRIES:
+        if l["section"] in ("day", "new") and l["countries"] < DAY_MIN_COUNTRIES:
             continue                                  # world news: carried in many countries, not one or two
         if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
                 or (region != "other" and per_region[region] >= PER_REGION):
