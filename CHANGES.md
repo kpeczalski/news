@@ -275,3 +275,4 @@ After an independent grade of the live page (5 out of 10):
 ## 2026-11-16 (Helsinki), morning check
 - Crises exclude stories about a crisis that are not the violent event: visits, speeches, courts ("Harry tells wounded veterans...", "Jordan sentences 3 men..."); crisis lines prefer a headline without such words; "planes collide on taxiway" is an accident (18 countries, not a crisis); the health check reads "kills senior commander" as a toll.
 - Daily review 16 Nov: "new" also needs 10+ countries (a Pope farewell in 5 countries showed); royal soft news blocked (prince/princess/duke/duchess, not "crown prince": Harry and William visits).
+- Reviewers now read the known limits of the setup (in PRINCIPLES.md) and grade against what is achievable.

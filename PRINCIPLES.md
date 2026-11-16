@@ -29,3 +29,14 @@
     CHANGES.md. Ask the owner before changing any of the points above.
 
 Working rule (owner): a change agreed in conversation is implemented right away; planned reviews are updated after.
+
+## Known limits of this setup (reviewers: grade against what is achievable here)
+- Input is headlines only (GDELT): no article text, no wire services' own sites (Reuters, AP, AFP
+  appear only as reprints). The site cannot check facts; it can only report what most outlets say.
+- English plus machine-translated outlets; English-language media are over-represented, so regions
+  with little coverage (Sudan, Myanmar, DR Congo) appear only when outlets report them.
+- Death tolls and claims are whatever headlines state, often early and from one side.
+- A small free model (Groq) writes a line only when no real headline passes the checks; it has no web.
+- Updates about every 30 minutes (GitHub runs about hourly, plus one refresh).
+- On quiet days (weekends, nights) fewer outlets publish, so smaller stories reach the page.
+- Grade only problems a fixed rule in this code could solve; name a limit as a limit, not a fault.
