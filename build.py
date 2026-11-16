@@ -51,7 +51,10 @@ earthquake flood floods cyclone hurricane typhoon famine massacre bomb bombs bom
 explosions explosive assassination assassinated shooting gunfire""".split())
 # An accident is not a crisis, even where there is a war, unless the world covers it.
 ACCIDENT_WORDS = set("""crash crashes crashed collision collides collided accident accidents collapse collapses
-collapsed derails derailed capsizes capsized stampede blaze mine miners methane leak""".split())
+collapsed collide derails derailed capsizes capsized stampede blaze mine miners methane leak taxiway runway""".split())
+# Words of stories about a crisis that are not the violent event itself: speech, visits, courts.
+NOT_EVENT = set("""calls urges accuses condemns slams warns vows presses tells visit visits visiting meets
+sentences sentenced sentencing court trial verdict convicted jailed charged funeral mourns""".split())
 CRISIS_SECTION = True
 ONGOING_LINES = 4                             # "ongoing": crises covered most over the last days
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
@@ -1528,7 +1531,7 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             amid = bool(re.search(r"\bamid\b", text, re.I))   # background added to the event
             # A crisis line says who did what ("Ukrainian drone strike kills 4 in Volgograd"), not who
             # says it: a headline without "says/claims" comes first when one passes.
-            plain = not (event and rw & SPEECH)
+            plain = not (event and rw & (SPEECH | NOT_EVENT))
             # a crisis line keeps its toll, killed and injured, when the headlines give it
             told = 0 if not event else len(TOLL_RE.findall(digits(text))) + (2 if NO_DEATH.search(text) else 0)
             specific = len(named) if event else 0     # a crisis line names where ("hospital"), not just "Gaza"
@@ -1718,7 +1721,7 @@ def health(data, state):
         if len(t) > 110:
             w.append("long line (%d chars): %s" % (len(t), t))
         heads = [h["t"] for h in l.get("headlines", [])]
-        if l["section"] == "ongoing" and toll(heads) != (0, 0) and not TOLL_RE.search(digits(t)) \
+        if l["section"] == "ongoing" and toll(heads) != (0, 0) and toll([t]) == (0, 0) \
                 and not NO_DEATH.search(t):
             w.append("crisis line without the toll its headlines give: " + t)
         if l["section"] == "ongoing" and l.get("by") == "model":
@@ -1825,8 +1828,7 @@ def render(state, now, cmap, built):
         countries), by the story's own headlines: these go to the crises section. Speeches, talks
         and accidents are not crisis events; they stay in the main list."""
         return CRISIS_SECTION and headline_share(s, CRISIS_WORDS | VIOLENT_DEATH) >= 0.4 \
-            and headline_share(s, {"calls", "urges", "accuses", "condemns", "slams", "warns", "vows",
-                                   "presses"}) < 0.5 \
+            and headline_share(s, NOT_EVENT) < 0.4 \
             and (headline_share(s, ACCIDENT_WORDS) < 0.3 or countries(s) >= BIG_DISASTER_COUNTRIES) \
             and (conflict_of(s) is not None or countries(s) >= BIG_DISASTER_COUNTRIES)
 

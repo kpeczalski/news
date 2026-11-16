@@ -271,3 +271,6 @@ After an independent grade of the live page (5 out of 10):
 - App icon (same as the desktop one): favicon, home-screen icon (iOS/Android), web app manifest so "Add to Home Screen" opens it like an app.
 - Model prompt: a complete grammatical sentence, never a list of words; rules 29 (model lines rewritten).
 - A list of shared words is refused as a line (5+ words, no grammar words, at most one non-shared word: "Kushner says Europe Russia peace talks"). Mine blasts and gas leaks count as accidents (not crises).
+
+## 2026-11-16 (Helsinki), morning check
+- Crises exclude stories about a crisis that are not the violent event: visits, speeches, courts ("Harry tells wounded veterans...", "Jordan sentences 3 men..."); crisis lines prefer a headline without such words; "planes collide on taxiway" is an accident (18 countries, not a crisis); the health check reads "kills senior commander" as a toll.
