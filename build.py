@@ -2103,6 +2103,11 @@ def render(state, now, cmap, built):
     # events merged and is left off; a line pointing the other way from most headlines is dropped
     # (the conflict's next event takes its place).
     for l in lines:
+        # A model line must say who or where: at least one name after its first word
+        # ("Police search for missing girls" says neither).
+        if l.get("by") == "model" and l["sentence"] and \
+                not any(w[:1].isupper() for w in l["sentence"].split()[1:]):
+            l["sentence"], l["by"] = "", ""
         # A named person's resignation, arrest or death is never in the model's words: a real headline
         # that passes the checks, or the line is left off.
         titles0, _, _, ckeys0, renowned0, persons0 = picks[l["id"]]
