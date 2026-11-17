@@ -74,7 +74,8 @@ CONTEXT = {
 }
 UNKNOWN_TOLL_WEIGHT = 1.6                     # no toll reported yet: like about 1 person killed
 BIG_DISASTER_COUNTRIES = 20                   # outside known wars: a disaster or attack the world covers
-BIG_EVENT = set("resigns resign resigned dies died arrested ousted sacked quits assassinated impeached".split())
+BIG_EVENT = set("resigns resign resigned dies died arrested ousted sacked quits assassinated impeached alive dying critical hospitalised hospitalized".split())
+FUTURE = set("will plans plan planned set expected scheduled upcoming ahead could may".split())
 ONGOING_DAYS = 7
 ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
@@ -2108,6 +2109,15 @@ def render(state, now, cmap, built):
         if l.get("by") == "model" and l["sentence"] and \
                 not any(w[:1].isupper() for w in l["sentence"].split()[1:]):
             l["sentence"], l["by"] = "", ""
+        # Crisis lines are real headlines only (the conflict's next event stands in otherwise).
+        if l["section"] == "ongoing" and l.get("by") == "model":
+            l["sentence"], l["by"] = "", ""
+        # A plan is not a fact: when many headlines speak of it as coming, a model line must too.
+        if l.get("by") == "model" and l["sentence"]:
+            titles_f = picks[l["id"]][0]
+            future = sum(1 for t in titles_f if set(raw_words(t)) & FUTURE) / max(1, len(titles_f))
+            if future >= 0.3 and not set(raw_words(l["sentence"])) & (FUTURE | {"to"}):
+                l["sentence"], l["by"] = "", ""
         # A named person's resignation, arrest or death is never in the model's words: a real headline
         # that passes the checks, or the line is left off.
         titles0, _, _, ckeys0, renowned0, persons0 = picks[l["id"]]

@@ -279,3 +279,8 @@ After an independent grade of the live page (5 out of 10):
 
 ## 2026-11-17 (Helsinki), morning check
 - A model line must name who or where (a capitalised word after the first): "Police search for missing girls" is left off.
+
+## 2026-11-17 (Helsinki), daily review
+- Crisis lines are real headlines only (a model line jammed two events: "Third US carrier arrives ... Iran strike on Bahrain targets").
+- A plan is not a fact: when 30%+ of headlines speak of something as coming, a model line must too ("Trump meets Xi and Putin" for a planned meeting is refused).
+- Health claims about a named person ("may not return alive") need a real headline.
