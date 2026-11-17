@@ -1529,7 +1529,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             fits = len(text) <= ONE_LINE                 # fits on one line of the page
             rw = set(raw_words(text))
             accuses = bool(set(persons) & rw and rw & WRONGDOING)   # a named person tied to wrongdoing
-            amid = bool(re.search(r"\bamid\b", text, re.I))   # background added to the event
+            # background added to the event; on a crisis line also a second event ("... as Russia reports ...")
+            amid = bool(re.search(r"\bamid\b" + (r"|\bas\b|\bwhile\b" if event else ""), text, re.I))
             # A crisis line says who did what ("Ukrainian drone strike kills 4 in Volgograd"), not who
             # says it: a headline without "says/claims" comes first when one passes.
             plain = not (event and rw & (SPEECH | NOT_EVENT))
@@ -2111,6 +2112,10 @@ def render(state, now, cmap, built):
             l["sentence"], l["by"] = "", ""
         # Crisis lines are real headlines only (the conflict's next event stands in otherwise).
         if l["section"] == "ongoing" and l.get("by") == "model":
+            l["sentence"], l["by"] = "", ""
+        # "may", "could", "might" in the model's words need a source ("..., police say").
+        if l.get("by") == "model" and l["sentence"] and set(raw_words(l["sentence"])) & {"may", "could", "might"} \
+                and not set(raw_words(l["sentence"])) & SPEECH:
             l["sentence"], l["by"] = "", ""
         # A plan is not a fact: when many headlines speak of it as coming, a model line must too.
         if l.get("by") == "model" and l["sentence"]:

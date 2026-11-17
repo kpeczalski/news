@@ -284,3 +284,4 @@ After an independent grade of the live page (5 out of 10):
 - Crisis lines are real headlines only (a model line jammed two events: "Third US carrier arrives ... Iran strike on Bahrain targets").
 - A plan is not a fact: when 30%+ of headlines speak of something as coming, a model line must too ("Trump meets Xi and Putin" for a planned meeting is refused).
 - Health claims about a named person ("may not return alive") need a real headline.
+- Model lines with may/could/might need a source; crisis lines prefer a headline without "as"/"while" (one event, not two).
