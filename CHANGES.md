@@ -296,3 +296,4 @@ After an independent grade of the live page (5 out of 10):
 - Round 2: a company's own affairs (board, product) with no state or market-wide actor count 0.6x (not a CEO resigning or being arrested). Scores round 2: accuracy 8, selection 6, readability 7.
 - Big stories no longer lost for "no clear sentence" when outlets disagree: a disputed story shows its most shared denial headline ("Nvidia chairman says board does not intend to reinstate Jensen Huang", 36 countries); "not" counts as a denial.
 - Thin pages (nights, weekends) fill up to 7 most-covered lines with stories down to score 8 (still 10+ countries).
+- Foreign stories (owner-approved): translated-feed articles that match no English story are grouped by shared names; at 15+ outlets in 10+ countries, up to 10 headlines are machine-translated and the line is picked from them with the usual checks.

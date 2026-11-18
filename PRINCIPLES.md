@@ -19,7 +19,8 @@
    when most headlines state the event as fact. Never invert who attacked whom.
 7. Sources when a line is opened: the event country's papers of record first (not for
    state-controlled press), then international papers of record, agencies, broadcasters.
-8. Wording: pick a real headline before writing one; the model only fills gaps and every
+8. Wording: pick a real headline before writing one (for a story told mostly in other languages, a
+   machine translation of real headlines, owner-approved 18 Nov); the model only fills gaps and every
    line passes the same checks. Refuse clickbait, verdict words, celebrity and sport.
 9. It runs without anyone: free GitHub hosting, free Groq model with a small local fallback,
    loaded only when needed. Keep the footprint small.

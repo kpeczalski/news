@@ -841,6 +841,65 @@ def attach_translated(state, arts, slot):
                 s["f"][dom] = [seen, seen]
         elif len(ents) >= 2 and seen > slot - PENDING:
             keep.append([dom, sorted(ents)[:12], seen])
+    for a in arts:                                    # every translated article also feeds the foreign stories
+        if a.get("title"):
+            add_foreign(state, a, slot)
+
+
+FX_MAX = 4000                                     # foreign clusters kept
+FX_RARE = 60                                      # an entity in more clusters than this is too common to link
+
+
+def add_foreign(state, a, slot):
+    """Stories told mostly in other languages: articles grouped by two shared names (GDELT gives names in
+    English); headlines kept in their language, translated only if the story reaches the page."""
+    fx = state.setdefault("fx", {})
+    ents = {e for e in a["ents"] if e[0] in "POL"}
+    if len(ents) < 2:
+        return
+    df = state.setdefault("fx_df", {})
+    best, best_n = None, 1
+    seen_ids = Counter()
+    for e in ents:
+        if df.get(e, 0) <= FX_RARE:
+            for cid in state.setdefault("fx_ix", {}).get(e, []):
+                seen_ids[cid] += 1
+    for cid, n in seen_ids.items():
+        c = fx.get(cid)
+        if c and n >= 2 and n > best_n - 1 and len(set(c["e"]) & ents) >= 2:
+            best, best_n = cid, n
+    if best is None:
+        best = "x%d_%d" % (slot, len(fx))
+        fx[best] = {"e": {}, "f": {}, "ti": {}, "first": slot}
+    c = fx[best]
+    for e in ents:
+        if e not in c["e"]:
+            df[e] = df.get(e, 0) + 1
+            state["fx_ix"].setdefault(e, []).append(best)
+        c["e"][e] = c["e"].get(e, 0) + 1
+    v = c["f"].setdefault(a["domain"], [slot, slot])
+    v[1] = max(v[1], slot)
+    c["ti"].setdefault(a["domain"], [a["title"][:200], a["url"], slot])
+
+
+def prune_foreign(state, now):
+    fx = state.get("fx", {})
+    for cid in list(fx):
+        c = fx[cid]
+        c["f"] = {d: v for d, v in c["f"].items() if v[1] > now - WINDOW}
+        c["ti"] = {d: v for d, v in c["ti"].items() if d in c["f"]}
+        if not c["f"] or (len(c["f"]) < 3 and c["first"] < now - 12):
+            del fx[cid]
+    if len(fx) > FX_MAX:                              # keep the largest
+        for cid in sorted(fx, key=lambda k: len(fx[k]["f"]))[:len(fx) - FX_MAX]:
+            del fx[cid]
+    live = set(fx)
+    state["fx_ix"] = {e: [c for c in ids if c in live] for e, ids in state.get("fx_ix", {}).items()}
+    state["fx_ix"] = {e: ids for e, ids in state["fx_ix"].items() if ids}
+    state["fx_df"] = {e: len(ids) for e, ids in state["fx_ix"].items()}
+    tr = state.get("tr", {})
+    urls = {v[1] for c in fx.values() for v in c["ti"].values()}
+    state["tr"] = {u: t for u, t in tr.items() if u in urls}
 
 
 def recount(s, old_n):
@@ -912,6 +971,7 @@ def prune(state, now):
     state["dom"] = {d: v for d, v in state["dom"].items() if v > now - WINDOW}
     state["arts"] = {k: v for k, v in state["arts"].items() if int(k) > now - WINDOW}
     state["pending"] = [p for p in state.get("pending", []) if p[2] > now - PENDING]
+    prune_foreign(state, now)
     for name, total in (("df", "ndocs"), ("edf", "ndocs_e")):
         if len(state[name]) > 40000:
             state[name] = {k: c for k, c in state[name].items() if c > 2}
@@ -1765,8 +1825,78 @@ def health(data, state):
     return w
 
 
+FX_MIN_OUTLETS = 15                              # a foreign story is considered from this many outlets
+FX_TRANSLATE = 6                                 # ...and at most this many are translated per build
+FX_TITLES = 10                                   # headlines translated per story
+
+
+def translate_titles(titles):
+    """Headlines in other languages into plain English, one per line, by the hosted model. {} if down."""
+    model = pick_model()
+    if not model or not model.startswith("api:") or not titles:
+        return {}
+    prompt = ("Translate each news headline into plain English. Keep names, numbers and attribution "
+              "exactly; add nothing. Answer with one translation per line, same order, no numbering.")
+    try:
+        payload = {"model": model[4:], "temperature": 0, "max_tokens": 1500,
+                   "messages": [{"role": "system", "content": prompt},
+                                {"role": "user", "content": "\n".join(titles)}]}
+        if "gpt-oss" in model:
+            payload.update({"reasoning_effort": "low", "include_reasoning": False})
+        out = api("/chat/completions", timeout=40, payload=payload)
+        text = ((out.get("choices") or [{}])[0].get("message") or {}).get("content", "")
+    except Exception as e:
+        log("translation failed:", repr(e)[:200])
+        return {}
+    lines_out = [l.strip(" -*\t") for l in text.strip().splitlines() if l.strip()]
+    if len(lines_out) != len(titles):
+        return {}
+    return dict(zip(titles, lines_out))
+
+
+def foreign_stories(state, cmap, english_tops):
+    """Foreign clusters big enough for the page and not already an English story, as stories with
+    translated headlines (translations cached by address)."""
+    fx, tr, made = state.get("fx", {}), state.setdefault("tr", {}), {}
+    big = sorted((c for c in fx.items() if len(c[1]["f"]) >= FX_MIN_OUTLETS),
+                 key=lambda c: -len(c[1]["f"]))
+    done = 0
+    for cid, c in big:
+        tops = {e for e, n in sorted(c["e"].items(), key=lambda x: -x[1])[:4]}
+        if any(len(tops & t) >= 2 for t in english_tops):
+            continue                                  # the English press already tells it
+        if len({country_of(d, cmap) for d in c["f"]} - {None, ""}) < DAY_MIN_COUNTRIES:
+            continue
+        need = [v for v in c["ti"].values() if v[1] not in tr][:FX_TITLES]
+        if need:
+            if done >= FX_TRANSLATE:
+                continue
+            done += 1
+            got = translate_titles([v[0] for v in need])
+            for v in need:
+                if v[0] in got:
+                    tr[v[1]] = got[v[0]]
+        ti = {d: (tr[v[1]], v[1], v[2], False) for d, v in c["ti"].items() if v[1] in tr}
+        if len(ti) < 3:
+            continue
+        t = Counter()
+        for title, *_ in ti.values():
+            t.update(k for k, _ in tokenise(title))
+        made["fx" + cid] = {"n": len(ti), "t": dict(t), "e": dict(c["e"]),
+                            "d": {d: list(c["f"][d]) for d in ti}, "f": {d: v for d, v in c["f"].items() if d not in ti},
+                            "ti": ti, "first": c["first"], "foreign": True}
+    return made
+
+
 def render(state, now, cmap, built):
     stories = state["stories"]
+    if state.get("fx") and AI != "off":
+        english_tops = [set(top_ents(s)[:4]) for s in stories.values() if s["n"] >= 3]
+        extra = foreign_stories(state, cmap, english_tops)
+        if extra:
+            stories = dict(stories)
+            stories.update(extra)
+            log("foreign stories considered:", len(extra))
 
     def members(s):
         m = dict(s["f"])
