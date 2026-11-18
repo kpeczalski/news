@@ -124,6 +124,8 @@ MARKET_WIDE = set("""government regulator regulators sanctions ban curbs export 
 congress parliament ministry minister eu commission court antitrust fine""".split())
 COMPANY_WEIGHT = 0.6
 DAY_MIN_COUNTRIES = int(os.environ.get("DAY_MIN_COUNTRIES", "10"))
+DAY_FILL_SCORE = 8                           # on a thin page, down to this, until DAY_FILL_LINES are shown
+DAY_FILL_LINES = 7
 DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "12"))  # so does an older one: a short list beats a padded one
 COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "1e9"))  # a line left as counted words: never shown
 ONE_LINE = 80                                 # characters that fit on one line of the page
@@ -1544,7 +1546,9 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             if len(alpha) >= 4 and not any(len(w) > 3 and w.islower() for w in alpha):
                 continue                              # Title Case Reads As Shouting (no plain word left)
             named = {k for _, k, _ in scan(text)} & set(consensus_keys)
-            if len(named) < 2 or (consensus_keys and 3 * len(named) < 2 * len(set(consensus_keys))):
+            # (a denial need only name half: "board does not intend to reinstate Jensen Huang")
+            share_needed = 1 if must_negate else 2
+            if len(named) < 2 or (consensus_keys and (2 if must_negate else 3) * len(named) < share_needed * len(set(consensus_keys))):
                 continue                              # it must say what most headlines say
             # Carrying at least half of the story's shared words is enough; then shorter is better,
             # which trims agency add-ons ("..., related events in Shenzhen").
@@ -1630,8 +1634,12 @@ def add_sentences(state, lines, picks, started):
                                  RECENT_TITLES.get(l["id"]))
         if picked and not name_ok and set(raw_words(picked)) & set(persons):
             picked = ""                               # a small story names no person
-        if picked and disputed and not set(raw_words(picked)) & DENIAL:
-            picked = ""                               # a disputed story is shown with its denial
+        if disputed and not (picked and set(raw_words(picked)) & (DENIAL | {"not", "no", "never"})):
+            # a disputed story is shown with its denial: the most shared headline that states it
+            picked = common_headline(titles, ckeys, claim, renowned, counted, True, persons, event,
+                                     RECENT_TITLES.get(l["id"]))
+            if picked and not set(raw_words(picked)) & (DENIAL | {"not", "no", "never"}):
+                picked = ""
         if True:
             if picked:
                 l["sentence"], l["by"] = picked, "headline"
@@ -2017,7 +2025,7 @@ def render(state, now, cmap, built):
         if len(mem) < MIN_OUTLETS:
             continue
         section = "new" if s["first"] > now - NEW_AGE else "day"
-        if score(s)[0] < (NEW_MIN_SCORE if section == "new" else DAY_MIN_SCORE):
+        if score(s)[0] < (NEW_MIN_SCORE if section == "new" else DAY_FILL_SCORE):
             skip(s, "small"); continue  # too small to list
         if not worldwide_enough(s):
             skip(s, "not worldwide"); continue
@@ -2251,6 +2259,9 @@ def render(state, now, cmap, built):
             if tech_shown >= TECH_LINES:
                 continue                              # at most 2 tech or company stories: room for the world
             tech_shown += 1
+        if l["section"] == "day" and l["score"] < DAY_MIN_SCORE and \
+                sum(1 for k in kept if k["section"] == "day") >= DAY_FILL_LINES:
+            continue                                  # smaller stories only fill a thin page (nights, weekends)
         if l["section"] in ("day", "new") and l["countries"] < DAY_MIN_COUNTRIES:
             continue                                  # world news: carried in many countries, not one or two
         if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \

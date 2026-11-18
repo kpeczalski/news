@@ -8,6 +8,7 @@ B.AI = "off"                       # tests never call a model; the writer is tes
 B.NEW_MIN_SCORE = 0                # most tests use tiny stories; the threshold has its own test
 B.MIN_SPREAD = 0                   # likewise the international floor
 B.DAY_MIN_SCORE = 0
+B.DAY_FILL_SCORE = 0
 B.DAY_MIN_COUNTRIES = 0
 B.AI_TRIES = 4                     # tests do not depend on the deployment's settings
 B.COUNTED_MIN_SCORE = 0
@@ -512,12 +513,12 @@ class Stories(unittest.TestCase):
         cmap = {"w%d.com" % i: "C%d" % i for i in range(12)}
         big = [art("w%d.com" % i, "Summit ends with climate accord, version %d" % i) for i in range(10)]
         small = [art("w%d.com" % i, "Train station alert causes disruption, note %d" % i) for i in range(4)]
-        saved = B.DAY_MIN_SCORE
-        B.DAY_MIN_SCORE = 8
+        saved = B.DAY_MIN_SCORE, B.DAY_FILL_SCORE
+        B.DAY_MIN_SCORE = B.DAY_FILL_SCORE = 8
         try:
             _, p = run([(100, big + small, []), (100 + B.NEW_AGE + 2, [], [])], cmap=cmap)
         finally:
-            B.DAY_MIN_SCORE = saved
+            B.DAY_MIN_SCORE, B.DAY_FILL_SCORE = saved
         self.assertEqual([l["outlets"] for l in p["lines"]], [10])
 
     def test_small_new_story_is_not_listed(self):

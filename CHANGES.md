@@ -294,3 +294,5 @@ After an independent grade of the live page (5 out of 10):
 - Yesterday's news counts half: a story first seen 30+ hours ago that fewer than 3 outlets joined in the last hour.
 - Round 1 of the improvement loop: a headline printed word for word by many outlets (a wire) counts as shared wording; "2-month lull" is a span of time, not a figure to check (the Iran-Bahrain strike was lost to these two); emotional words refused (heartbroken, devastated, tragic).
 - Round 2: a company's own affairs (board, product) with no state or market-wide actor count 0.6x (not a CEO resigning or being arrested). Scores round 2: accuracy 8, selection 6, readability 7.
+- Big stories no longer lost for "no clear sentence" when outlets disagree: a disputed story shows its most shared denial headline ("Nvidia chairman says board does not intend to reinstate Jensen Huang", 36 countries); "not" counts as a denial.
+- Thin pages (nights, weekends) fill up to 7 most-covered lines with stories down to score 8 (still 10+ countries).
