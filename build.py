@@ -119,6 +119,10 @@ TECH = set("""ai chip chips semiconductor semiconductors nvidia apple microsoft 
 spacex starship openai anthropic tiktok samsung intel tsmc software app smartphone iphone""".split())
 TECH_LINES = 2
 OLD_STORY_WEIGHT = 0.5
+COMPANY = set("company companies board ceo chairman shareholders shares stock earnings startup firm".split())
+MARKET_WIDE = set("""government regulator regulators sanctions ban curbs export exports tariff tariffs markets
+congress parliament ministry minister eu commission court antitrust fine""".split())
+COMPANY_WEIGHT = 0.6
 DAY_MIN_COUNTRIES = int(os.environ.get("DAY_MIN_COUNTRIES", "10"))
 DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "12"))  # so does an older one: a short list beats a padded one
 COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "1e9"))  # a line left as counted words: never shown
@@ -1823,6 +1827,11 @@ def render(state, now, cmap, built):
         if cmap and not other:
             boost *= NO_OTHER_LANG
         boost *= 1 + LIFE_WEIGHT * min(1.0, share(s, "T:death", VIOLENT_DEATH | {"dead", "deaths"}) / 0.5)
+        # A company's own affairs (a board, a product) count less than news with a state or market-wide
+        # actor (a government, regulator, sanctions, markets).
+        if headline_share(s, TECH | COMPANY) >= 0.5 and headline_share(s, STATE_WORDS | MARKET_WIDE) < 0.2 \
+                and headline_share(s, BIG_EVENT) < 0.3:       # (a CEO resigning is still the news)
+            boost *= COMPANY_WEIGHT
         # Yesterday's news: a story first seen over 30 hours ago that few outlets still join counts less,
         # so it does not hold a place for days.
         if s["first"] < now - 120 and sum(1 for v in members(s).values() if v[1] > now - 4) < 3:

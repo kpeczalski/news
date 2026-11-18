@@ -293,3 +293,4 @@ After an independent grade of the live page (5 out of 10):
 - At most 2 tech or company stories in most covered (TECH words in half the sources), leaving room for world news. Re-grade after the pattern fixes: accuracy 7, selection 5, readability 7.
 - Yesterday's news counts half: a story first seen 30+ hours ago that fewer than 3 outlets joined in the last hour.
 - Round 1 of the improvement loop: a headline printed word for word by many outlets (a wire) counts as shared wording; "2-month lull" is a span of time, not a figure to check (the Iran-Bahrain strike was lost to these two); emotional words refused (heartbroken, devastated, tragic).
+- Round 2: a company's own affairs (board, product) with no state or market-wide actor count 0.6x (not a CEO resigning or being arrested). Scores round 2: accuracy 8, selection 6, readability 7.
