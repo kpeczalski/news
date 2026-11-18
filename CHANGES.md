@@ -288,3 +288,4 @@ After an independent grade of the live page (5 out of 10):
 
 ## 2026-11-18 (Helsinki), morning check
 - "pogrom" refused as a loaded word: the line falls back to a plainer headline of the same event.
+- Totals keep their time frame: "Drone strikes killed more than 1,630 civilians in Sudan this year" (frame taken from the headlines with the same figure). "pogrom" refused.

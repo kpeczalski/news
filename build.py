@@ -1467,6 +1467,8 @@ def digits(text):
 
 RESOLVE = {"lifts", "lifted", "lift", "resume", "resumes", "resumed", "reopens", "reopened", "restored",
            "restores", "ends", "ended", "released", "freed", "rescued", "contained", "extinguished"}
+TIMEFRAME = re.compile(r"\b(this year|so far|since \w+|in \d+ (?:months|weeks|days|years)|over the past \w+|"
+                       r"last year|this month|in 20\d\d|a year|per year|each year)\b", re.I)
 RECENT_TITLES = {}                            # story id -> its headlines from the last 6 hours
 
 
@@ -1491,6 +1493,7 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     small = {"a", "an", "the", "of", "in", "on", "at", "to", "for", "by", "with", "from", "over", "into"}
     n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
     res_share = sum(1 for t in titles if set(raw_words(t)) & RESOLVE) / max(1, len(titles))
+    frame_share = sum(1 for t in titles if TIMEFRAME.search(t)) / max(1, len(titles))
     for title, n in Counter(titles).items():
         if n < 2 and title not in renowned and n_wordings < 6:
             continue                                  # in a big story every word is checked against many
@@ -1542,7 +1545,9 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             # the latest development first ("FAA lifts ground stop" over the morning's "FAA issues ground stop")
             fresh = recent is None or title in recent
             resolved = bool(rw & RESOLVE) if res_share >= 0.15 else False   # the outcome, once outlets report it
-            ranked.append(((not accuses, resolved, fresh, plain, told, scale, fits, specific, not amid, enough, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
+            # a total over time keeps its time frame ("1,630 civilians ... this year"), or it reads as one event
+            framed = bool(TIMEFRAME.search(text)) if frame_share >= 0.2 else False
+            ranked.append(((not accuses, framed, resolved, fresh, plain, told, scale, fits, specific, not amid, enough, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
@@ -2123,6 +2128,16 @@ def render(state, now, cmap, built):
             future = sum(1 for t in titles_f if set(raw_words(t)) & FUTURE) / max(1, len(titles_f))
             if future >= 0.3 and not set(raw_words(l["sentence"])) & (FUTURE | {"to"}):
                 l["sentence"], l["by"] = "", ""
+        # A total over time keeps its time frame: when the headlines with the same figure give one frame
+        # (2+ of them, no other), or 25%+ of all headlines do, and the line does not, it is added ("...1,630 civilians in Sudan this year").
+        if l["sentence"] and not TIMEFRAME.search(l["sentence"]):
+            nums = set(re.findall(r"\d[\d,]*", digits(l["sentence"])))
+            same = [t for t in picks[l["id"]][0] if not nums or nums & set(re.findall(r"\d[\d,]*", digits(t)))]
+            frames = Counter(m.group(0).lower() for t in same for m in [TIMEFRAME.search(t)] if m)   # same figure
+            if frames:
+                frame, n = frames.most_common(1)[0]
+                if (n >= 2 and len(frames) == 1) or n >= 0.25 * len(picks[l["id"]][0]):   # one frame, agreed
+                    l["sentence"] = l["sentence"].rstrip(".") + " " + frame
         # A named person's resignation, arrest or death is never in the model's words: a real headline
         # that passes the checks, or the line is left off.
         titles0, _, _, ckeys0, renowned0, persons0 = picks[l["id"]]
