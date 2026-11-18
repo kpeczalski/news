@@ -230,7 +230,7 @@ rips ripped destroys destroyed epic insane unbelievable incredible amazing horri
 devastating heartbreaking tragic chaos fury furious outrage outraged meltdown nightmare jaw-dropping
 exclusive urgent revealed finally massive huge emotional beloved dramatic iconic heartfelt historic
 stunned furious bizarre chilling brutal savage
-scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense quietly bluntly rekindles heartwarming unprecedented another jokes joke laughs pogrom""".split())   # verdicts, not facts
+scandal scandals disgraced disgrace shamed notorious infamous embattled nonsense quietly bluntly rekindles heartwarming unprecedented another jokes joke laughs pogrom heartbroken heartbreaking devastated tragic""".split())   # verdicts, not facts
 
 NUMWORDS = {"one": "1", "two": "2", "three": "3", "four": "4", "five": "5", "six": "6", "seven": "7",
             "eight": "8", "nine": "9", "ten": "10", "eleven": "11", "twelve": "12", "thirteen": "13",
@@ -1236,9 +1236,12 @@ def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False
     # Numbers: only those the counted line states (spelled-out numbers are read as digits).
     if counted is not None:
         nums, ranges = counted_numbers(counted)
-        stated = [k for _, k, _ in scan(sentence) if is_num(k)]
+        # a span of time ("2-month lull", "two-month") is not a figure to check
+        plain_s = re.sub(r"\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten|twelve)[- ](day|week|month|year|hour)s?\b",
+                         " ", sentence, flags=re.I)
+        stated = [k for _, k, _ in scan(plain_s) if is_num(k)]
         stated += [n.replace(",", "") for n in
-                   re.findall(r"(?<![A-Za-z\-])\d[\d,]*(?:\.\d+)?%?(?![A-Za-z])", sentence)]
+                   re.findall(r"(?<![A-Za-z\-])\d[\d,]*(?:\.\d+)?%?(?![A-Za-z])", plain_s)]
         for n in stated:
             try:
                 v = float(n.rstrip("%"))
@@ -1570,7 +1573,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     for _, text, source in sorted(ranked, reverse=True):
         plain = text.rstrip(".")
         # A headline that a third of the outlets print word for word IS what most outlets say.
-        need = 1 if printed[source] >= max(3, len(titles) / 3) else support
+        # a headline many outlets print word for word (a wire) is itself shared wording
+        need = 1 if printed[source] >= max(3, min(len(titles) / 3, max(10, len(titles) / 10))) else support
         if not check_sentence(plain, titles, must_negate, consensus_keys, False, counted,
                               max_words=AI_WORDS + 2, clauses=False, min_support=need, persons=persons):
             return plain
