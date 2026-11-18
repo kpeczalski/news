@@ -869,12 +869,13 @@ FX_RARE = 60                                      # an entity in more clusters t
 def add_foreign(state, a, slot):
     """Stories told mostly in other languages: articles grouped by two shared names (GDELT gives names in
     English); headlines kept in their language, translated only if the story reaches the page."""
-    if state.get("fx_v") != 2:                        # (version 1 linked on common names: start over)
-        state["fx"], state["fx_ix"], state["fx_df"], state["fx_v"] = {}, {}, {}, 2
+    if state.get("fx_v") != 3:                        # (earlier versions linked too loosely: start over)
+        state["fx"], state["fx_ix"], state["fx_df"], state["fx_v"] = {}, {}, {}, 3
     fx = state.setdefault("fx", {})
     edf, nd = state.get("edf", {}), max(1, state.get("ndocs_e", 1))
     # only names rare in the whole news flow link articles ("Vrancea", not "United States" or "Beijing")
-    ents = {e for e in a["ents"] if e[0] in "POL" and edf.get(e, 0) < FX_RARE_SHARE * nd}
+    # people and places only: organisation names come out of machine translation too varied and generic
+    ents = {e for e in a["ents"] if e[0] in "PL" and edf.get(e, 0) < FX_RARE_SHARE * nd}
     if len(ents) < 2:
         return
     df = state.setdefault("fx_df", {})
@@ -908,7 +909,7 @@ def prune_foreign(state, now):
         c = fx[cid]
         c["f"] = {d: v for d, v in c["f"].items() if v[1] > now - WINDOW}
         c["ti"] = {d: v for d, v in c["ti"].items() if d in c["f"]}
-        if not c["f"] or (len(c["f"]) < 3 and c["first"] < now - 12):
+        if not c["f"] or (len(c["f"]) < 3 and c["first"] < now - 8):
             del fx[cid]
     if len(fx) > FX_MAX:                              # keep the largest
         for cid in sorted(fx, key=lambda k: len(fx[k]["f"]))[:len(fx) - FX_MAX]:
