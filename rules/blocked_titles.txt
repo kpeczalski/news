@@ -35,3 +35,5 @@
 (?<!crown )\b(prince|princess|duke|duchess)\b
 \bwords? of the year\b|\bdictionary\b
 \b(college entrance|entrance exam|exam scorer|admits (using )?ai to cheat|ai cheating)\b
+\b(everything you need to know|here's what (we|you) know|what to know)\b
+\b(grand theft auto|gta (vi|6)|video game|trailer)\b

@@ -847,14 +847,19 @@ def attach_translated(state, arts, slot):
 
 
 FX_MAX = 4000                                     # foreign clusters kept
+FX_RARE_SHARE = 0.002                          # an entity in more than 0.2% of all articles is too common to link
 FX_RARE = 60                                      # an entity in more clusters than this is too common to link
 
 
 def add_foreign(state, a, slot):
     """Stories told mostly in other languages: articles grouped by two shared names (GDELT gives names in
     English); headlines kept in their language, translated only if the story reaches the page."""
+    if state.get("fx_v") != 2:                        # (version 1 linked on common names: start over)
+        state["fx"], state["fx_ix"], state["fx_df"], state["fx_v"] = {}, {}, {}, 2
     fx = state.setdefault("fx", {})
-    ents = {e for e in a["ents"] if e[0] in "POL"}
+    edf, nd = state.get("edf", {}), max(1, state.get("ndocs_e", 1))
+    # only names rare in the whole news flow link articles ("Vrancea", not "United States" or "Beijing")
+    ents = {e for e in a["ents"] if e[0] in "POL" and edf.get(e, 0) < FX_RARE_SHARE * nd}
     if len(ents) < 2:
         return
     df = state.setdefault("fx_df", {})
@@ -866,7 +871,7 @@ def add_foreign(state, a, slot):
                 seen_ids[cid] += 1
     for cid, n in seen_ids.items():
         c = fx.get(cid)
-        if c and n >= 2 and n > best_n - 1 and len(set(c["e"]) & ents) >= 2:
+        if c and n >= 2 and n > best_n:
             best, best_n = cid, n
     if best is None:
         best = "x%d_%d" % (slot, len(fx))
