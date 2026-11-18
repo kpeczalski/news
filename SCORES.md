@@ -25,3 +25,9 @@ readability 10.
 | 2026-11-17 17:05Z | accuracy 5 | selection 7 | readability 6 | daily review vs method + limits (sonnet), before fixes |
 | 2026-11-18 08:05Z | accuracy 7 | selection 5 | readability 7 | after 6-day pattern fixes (sonnet) |
 | 2026-11-18 08:10Z | accuracy 8 | selection 6 | readability 7 | loop round 2 (sonnet) |
+
+## 2026-11-18 19:00 (Helsinki), daily review (sonnet)
+- Accuracy 6, selection 7, readability 8.
+- Fixed: sanctions line in crises with a borrowed "10 injured" (sanctions and threats are not violent events; injured only on event lines).
+- Not changed: "Trump warns Iran over possible Washington attack" is Trump's own statement and already says "possible"; "police seek charges" is the more cautious of the two source wordings.
+- Limits: no Africa story with 10+ countries today.
