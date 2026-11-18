@@ -118,6 +118,7 @@ NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs
 TECH = set("""ai chip chips semiconductor semiconductors nvidia apple microsoft google alphabet meta amazon tesla
 spacex starship openai anthropic tiktok samsung intel tsmc software app smartphone iphone""".split())
 TECH_LINES = 2
+OLD_STORY_WEIGHT = 0.5
 DAY_MIN_COUNTRIES = int(os.environ.get("DAY_MIN_COUNTRIES", "10"))
 DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "12"))  # so does an older one: a short list beats a padded one
 COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "1e9"))  # a line left as counted words: never shown
@@ -1818,6 +1819,10 @@ def render(state, now, cmap, built):
         if cmap and not other:
             boost *= NO_OTHER_LANG
         boost *= 1 + LIFE_WEIGHT * min(1.0, share(s, "T:death", VIOLENT_DEATH | {"dead", "deaths"}) / 0.5)
+        # Yesterday's news: a story first seen over 30 hours ago that few outlets still join counts less,
+        # so it does not hold a place for days.
+        if s["first"] < now - 120 and sum(1 for v in members(s).values() if v[1] > now - 4) < 3:
+            boost *= OLD_STORY_WEIGHT
         return ((w + reprint * max(0, english - w) + OTHER_LANG_WEIGHT * other) * spread * boost,
                 c, len(members(s)))
 
