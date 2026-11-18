@@ -1311,6 +1311,15 @@ def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False
     if persons and set(keys) & set(persons) and rawset & WRONGDOING and not rawset & ATTRIBUTED:
         return "unattributed allegation about a person"
     # Job status ("former", "ex") must be what most headlines say, not one outlet's view.
+    # Every name in the line (a capitalised word other headlines also capitalise) must be in the headlines
+    # of 2+ outlets: "UK sanctions firms..." when the headlines say Australia is refused.
+    distinct_l = [t.lower() for t in titles]          # one per outlet: a wire printed by 40 counts 40
+    caps_mid = {w.lower() for t in titles for w in re.findall(r"(?<=\s)[A-Z][\w'-]+", t)}
+    for w in re.findall(r"[A-Z][\w'-]+", sentence):
+        lw = re.sub(r"'s$", "", w.lower())
+        if lw in caps_mid and len(set(distinct_l)) >= 3 and \
+                sum(1 for t in distinct_l if re.search(r"\b%s" % re.escape(lw), t)) < 2:
+            return "name in only one headline: " + w
     # A list of shared words is not a sentence ("Kushner says Europe Russia peace talks"): five or more
     # words, no small grammar words, and at most one word outside the shared ones.
     plain_words = [w for w in raw_words(sentence)]
@@ -2110,6 +2119,10 @@ def render(state, now, cmap, built):
     # events merged and is left off; a line pointing the other way from most headlines is dropped
     # (the conflict's next event takes its place).
     for l in lines:
+        # Sources under a line: those sharing most of its words first (no drift to another topic).
+        if l.get("sentence") and l.get("headlines"):
+            mine = {k for _, k, _ in scan(l["sentence"])}
+            l["headlines"].sort(key=lambda h: -len(mine & {k for _, k, _ in scan(h["t"])}))
         # A model line must say who or where: at least one name after its first word
         # ("Police search for missing girls" says neither).
         if l.get("by") == "model" and l["sentence"] and \
@@ -2130,13 +2143,13 @@ def render(state, now, cmap, built):
                 l["sentence"], l["by"] = "", ""
         # A total over time keeps its time frame: when the headlines with the same figure give one frame
         # (2+ of them, no other), or 25%+ of all headlines do, and the line does not, it is added ("...1,630 civilians in Sudan this year").
-        if l["sentence"] and not TIMEFRAME.search(l["sentence"]):
+        if l["sentence"] and not TIMEFRAME.search(l["sentence"]) and re.search(r"\d", digits(l["sentence"])):
             nums = set(re.findall(r"\d[\d,]*", digits(l["sentence"])))
-            same = [t for t in picks[l["id"]][0] if not nums or nums & set(re.findall(r"\d[\d,]*", digits(t)))]
+            same = [t for t in picks[l["id"]][0] if nums & set(re.findall(r"\d[\d,]*", digits(t)))]
             frames = Counter(m.group(0).lower() for t in same for m in [TIMEFRAME.search(t)] if m)   # same figure
             if frames:
                 frame, n = frames.most_common(1)[0]
-                if len(frames) == 1 or n >= 0.25 * len(picks[l["id"]][0]):   # one frame for that figure
+                if len(frames) == 1:                  # one frame for that figure
                     l["sentence"] = l["sentence"].rstrip(".") + " " + frame
         # A named person's resignation, arrest or death is never in the model's words: a real headline
         # that passes the checks, or the line is left off.

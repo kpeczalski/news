@@ -33,3 +33,5 @@
 \band other ([\w-]+ )?news\b
 \b(news|world) (roundup|round-up|digest|briefing|in brief)\b
 (?<!crown )\b(prince|princess|duke|duchess)\b
+\bwords? of the year\b|\bdictionary\b
+\b(college entrance|entrance exam|exam scorer|admits (using )?ai to cheat|ai cheating)\b
