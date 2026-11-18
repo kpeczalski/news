@@ -2136,7 +2136,7 @@ def render(state, now, cmap, built):
             frames = Counter(m.group(0).lower() for t in same for m in [TIMEFRAME.search(t)] if m)   # same figure
             if frames:
                 frame, n = frames.most_common(1)[0]
-                if (n >= 2 and len(frames) == 1) or n >= 0.25 * len(picks[l["id"]][0]):   # one frame, agreed
+                if len(frames) == 1 or n >= 0.25 * len(picks[l["id"]][0]):   # one frame for that figure
                     l["sentence"] = l["sentence"].rstrip(".") + " " + frame
         # A named person's resignation, arrest or death is never in the model's words: a real headline
         # that passes the checks, or the line is left off.
