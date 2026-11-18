@@ -54,7 +54,8 @@ ACCIDENT_WORDS = set("""crash crashes crashed collision collides collided accide
 collapsed collide derails derailed capsizes capsized stampede blaze mine miners methane leak taxiway runway""".split())
 # Words of stories about a crisis that are not the violent event itself: speech, visits, courts.
 NOT_EVENT = set("""calls urges accuses condemns slams warns vows presses tells visit visits visiting meets
-sentences sentenced sentencing court trial verdict convicted jailed charged funeral mourns""".split())
+sentences sentenced sentencing court trial verdict convicted jailed charged funeral mourns sanctions
+sanction sanctioned imposes condemn condemned threatens threaten threatened threat threats""".split())
 CRISIS_SECTION = True
 ONGOING_LINES = 4                             # "ongoing": crises covered most over the last days
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
@@ -2368,7 +2369,9 @@ def render(state, now, cmap, built):
         # Injured: when outlets give different numbers, the lowest one they give, as "at least N injured"
         # (2+ headlines must give a number; nothing is added if the line already mentions injuries).
         if is_event and l["sentence"] and \
+                set(raw_words(l["sentence"])) & (CRISIS_WORDS | VIOLENT_DEATH | ACCIDENT_WORDS) and \
                 not set(raw_words(l["sentence"])) & {"injured", "injures", "injure", "wounded", "wounds", "hurt"}:
+            # (only a line that tells the violent event or accident itself gets its injured count)
             hurt = []
             line_dead = toll([l["sentence"]])[0]
             for t in picks[l["id"]][0]:

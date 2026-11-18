@@ -300,3 +300,6 @@ After an independent grade of the live page (5 out of 10):
 - Foreign stories, fix: version 1 linked articles on common names (one 247-outlet blob of "United States/Beijing" stories); now only names in under 0.2% of all articles link, and clusters start over. Clickbait guides and video games blocked ("everything you need to know", GTA VI).
 - People stories left off: a story whose reports mostly name one person and that involves no public office (GDELT office tag, titles, known leaders), no business impact, no crime or death ("David Beckham sues after fragrance sold in gas stations").
 - Foreign stories, fix 2: clusters were topic blobs (EU affairs, Spanish politics) linked by generic organisation names; now only people and places link, and clusters start over.
+
+## 2026-11-18 (Helsinki), daily review
+- Crises: sanctions and threats are not violent events ("Australia sanctions Israeli settlers..." and "Iran threatens to strike..." left off); an injured count is only added to a line that tells the violent event or accident itself.
