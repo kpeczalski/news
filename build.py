@@ -870,8 +870,8 @@ FX_RARE = 60                                      # an entity in more clusters t
 def add_foreign(state, a, slot):
     """Stories told mostly in other languages: articles grouped by two shared names (GDELT gives names in
     English); headlines kept in their language, translated only if the story reaches the page."""
-    if state.get("fx_v") != 3:                        # (earlier versions linked too loosely: start over)
-        state["fx"], state["fx_ix"], state["fx_df"], state["fx_v"] = {}, {}, {}, 3
+    if state.get("fx_v") != 4:                        # (earlier versions linked too loosely: start over)
+        state["fx"], state["fx_ix"], state["fx_df"], state["fx_v"] = {}, {}, {}, 4
     fx = state.setdefault("fx", {})
     edf, nd = state.get("edf", {}), max(1, state.get("ndocs_e", 1))
     # only names rare in the whole news flow link articles ("Vrancea", not "United States" or "Beijing")
@@ -880,7 +880,9 @@ def add_foreign(state, a, slot):
     if len(ents) < 2:
         return
     df = state.setdefault("fx_df", {})
-    best, best_n = None, 1
+    # three shared names (two for an article naming only two): two names alone joined a summit
+    # and a bridge attack through "Putin" and "Crimea"
+    best, best_n = None, min(3, len(ents)) - 1
     seen_ids = Counter()
     for e in ents:
         if df.get(e, 0) <= FX_RARE:
@@ -888,7 +890,7 @@ def add_foreign(state, a, slot):
                 seen_ids[cid] += 1
     for cid, n in seen_ids.items():
         c = fx.get(cid)
-        if c and n >= 2 and n > best_n:
+        if c and n > best_n:
             best, best_n = cid, n
     if best is None:
         best = "x%d_%d" % (slot, len(fx))
@@ -1876,7 +1878,14 @@ def translate_titles(titles):
     return dict(zip(titles, lines_out))
 
 
-def foreign_stories(state, cmap, english_tops):
+FX_SAME_WORDS = 3                                # a foreign story sharing this many top words is an English one
+
+
+def top_words(t, k=8):
+    return {w for w, _ in sorted(t.items(), key=lambda x: -x[1])[:k]}
+
+
+def foreign_stories(state, cmap, english_tops, english_words=()):
     """Foreign clusters big enough for the page and not already an English story, as stories with
     translated headlines (translations cached by address)."""
     fx, tr, made = state.get("fx", {}), state.setdefault("tr", {}), {}
@@ -1904,6 +1913,10 @@ def foreign_stories(state, cmap, english_tops):
         t = Counter()
         for title, *_ in ti.values():
             t.update(k for k, _ in tokenise(title))
+        # translated names differ from English ones ("Vladimir Putin i Donald"), so also compare the
+        # translated headlines' words with the English stories' words
+        if any(len(top_words(t) & w) >= FX_SAME_WORDS for w in english_words):
+            continue
         made["fx" + cid] = {"n": len(ti), "t": dict(t), "e": dict(c["e"]),
                             "d": {d: list(c["f"][d]) for d in ti}, "f": {d: v for d, v in c["f"].items() if d not in ti},
                             "ti": ti, "first": c["first"], "foreign": True}
@@ -1914,7 +1927,8 @@ def render(state, now, cmap, built):
     stories = state["stories"]
     if state.get("fx") and AI != "off":
         english_tops = [set(top_ents(s)[:4]) for s in stories.values() if s["n"] >= 3]
-        extra = foreign_stories(state, cmap, english_tops)
+        english_words = [top_words(s["t"]) for s in stories.values() if s["n"] >= 10]
+        extra = foreign_stories(state, cmap, english_tops, english_words)
         if extra:
             stories = dict(stories)
             stories.update(extra)

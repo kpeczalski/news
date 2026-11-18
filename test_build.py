@@ -1121,3 +1121,13 @@ class Direction(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ForeignDuplicate(unittest.TestCase):
+    def test_top_words_overlap_marks_english_story(self):
+        from collections import Counter
+        fx = B.top_words(Counter({"trump": 9, "putin": 8, "xi": 8, "summit": 5, "shenzhen": 4}))
+        en = B.top_words(Counter({"trump": 30, "xi": 20, "putin": 15, "apec": 10, "china": 9}))
+        self.assertGreaterEqual(len(fx & en), B.FX_SAME_WORDS)
+        other = B.top_words(Counter({"sofia": 9, "mayor": 8, "terziev": 6, "budget": 4}))
+        self.assertLess(len(other & en), B.FX_SAME_WORDS)
