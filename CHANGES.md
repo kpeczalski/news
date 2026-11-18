@@ -290,3 +290,4 @@ After an independent grade of the live page (5 out of 10):
 - "pogrom" refused as a loaded word: the line falls back to a plainer headline of the same event.
 - Totals keep their time frame: "Drone strikes killed more than 1,630 civilians in Sudan this year" (frame taken from the headlines with the same figure). "pogrom" refused.
 - From a 6-day pattern review (3 analysts): every name in a line must appear in the headlines of 2+ outlets (stops "UK" when sources say Australia); sources under a line sorted by closeness to it (no topic drift); soft items blocked (word of the year, dictionaries, exam cheating); a time frame is only added to a line with a figure, from headlines with that figure.
+- At most 2 tech or company stories in most covered (TECH words in half the sources), leaving room for world news. Re-grade after the pattern fixes: accuracy 7, selection 5, readability 7.

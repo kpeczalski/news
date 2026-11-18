@@ -115,6 +115,9 @@ BUDGET = int(os.environ.get("BUDGET_SECONDS", "420"))       # stop taking new sl
 NEW_LINES = int(os.environ.get("NEW_LINES", "5"))            # lines in "new in the last 3 hours"
 DAY_LINES = int(os.environ.get("DAY_LINES", "9"))            # lines in "last 24 hours"
 NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs this much coverage to be listed
+TECH = set("""ai chip chips semiconductor semiconductors nvidia apple microsoft google alphabet meta amazon tesla
+spacex starship openai anthropic tiktok samsung intel tsmc software app smartphone iphone""".split())
+TECH_LINES = 2
 DAY_MIN_COUNTRIES = int(os.environ.get("DAY_MIN_COUNTRIES", "10"))
 DAY_MIN_SCORE = float(os.environ.get("DAY_MIN_SCORE", "12"))  # so does an older one: a short list beats a padded one
 COUNTED_MIN_SCORE = float(os.environ.get("COUNTED_MIN_SCORE", "1e9"))  # a line left as counted words: never shown
@@ -2219,11 +2222,17 @@ def render(state, now, cmap, built):
     lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
     cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES}
     kept, per_country, per_region, shown_crises = [], Counter(), Counter(), set()
+    tech_shown = 0
     for l in lines:                         # spares fill only gaps; caps count lines actually shown
         where = l.pop("_where", None)
         region = REGION_OF.get(where or "", "other")
         if l["section"] == "ongoing" and where in shown_crises:
             continue                                  # one line per conflict
+        if l["section"] == "day" and sum(1 for h in l.get("headlines", []) if set(raw_words(h["t"])) & TECH) \
+                >= 0.5 * max(1, len(l.get("headlines", []))):
+            if tech_shown >= TECH_LINES:
+                continue                              # at most 2 tech or company stories: room for the world
+            tech_shown += 1
         if l["section"] in ("day", "new") and l["countries"] < DAY_MIN_COUNTRIES:
             continue                                  # world news: carried in many countries, not one or two
         if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
