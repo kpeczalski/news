@@ -298,3 +298,4 @@ After an independent grade of the live page (5 out of 10):
 - Thin pages (nights, weekends) fill up to 7 most-covered lines with stories down to score 8 (still 10+ countries).
 - Foreign stories (owner-approved): translated-feed articles that match no English story are grouped by shared names; at 15+ outlets in 10+ countries, up to 10 headlines are machine-translated and the line is picked from them with the usual checks.
 - Foreign stories, fix: version 1 linked articles on common names (one 247-outlet blob of "United States/Beijing" stories); now only names in under 0.2% of all articles link, and clusters start over. Clickbait guides and video games blocked ("everything you need to know", GTA VI).
+- People stories left off: a story whose reports mostly name one person and that involves no public office (GDELT office tag, titles, known leaders), no business impact, no crime or death ("David Beckham sues after fragrance sold in gas stations").

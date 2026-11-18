@@ -123,6 +123,17 @@ COMPANY = set("company companies board ceo chairman shareholders shares stock ea
 MARKET_WIDE = set("""government regulator regulators sanctions ban curbs export exports tariff tariffs markets
 congress parliament ministry minister eu commission court antitrust fine""".split())
 COMPANY_WEIGHT = 0.6
+OFFICE = set("""president presidents minister ministers pm premier chancellor king queen pope senator governor
+mayor parliament government leader leaders opposition election elected candidate party ambassador envoy
+general army military court judge judges un nato eu senate congress lawmakers bill law vote ruling
+tariff tariffs sanctions talks summit treaty""".split())
+# Heads of state and government and other office holders headlines name without a title (for stories
+# from before GDELT's office tag was read; the tag decides from then on).
+LEADERS = set("""trump putin xi zelensky zelenskyy modi netanyahu erdogan macron starmer merz lula khamenei
+pezeshkian kim carney albanese takaichi sheinbaum milei guterres vance rubio hegseth lavrov orban meloni
+sanchez tusk von der leyen sharif ramaphosa ruto tinubu prabowo marcos anwar""".split())
+CRIME = set("""arrested arrest charged charges convicted sentenced jailed indicted killed dies died dead death
+shot murder murdered assassinated attack attacked kidnapped missing extradited raid fraud""".split())
 DAY_MIN_COUNTRIES = int(os.environ.get("DAY_MIN_COUNTRIES", "10"))
 DAY_FILL_SCORE = 8                           # on a thin page, down to this, until DAY_FILL_LINES are shown
 DAY_FILL_LINES = 7
@@ -506,6 +517,8 @@ def latest_slot(name):
 
 
 SPORT_THEME = re.compile(r"(?<![A-Z])SPORT|ATHLET|_PLAYER|FOOTBALL|SOCCER|CRICKET|OLYMPIC")   # not TRANSPORT
+OFFICE_THEME = re.compile(r"TAX_FNCACT_(PRESIDENT|PRIME_MINISTER|MINISTER|LEADER|LAWMAKER|SENATOR|GOVERNOR|"
+                          r"CHANCELLOR|KING|DIPLOMAT|AMBASSADOR|SECRETARY)|LEGISLATION|ELECTION|GOV_", re.I)
 CRISIS_THEME = re.compile(r"ARMEDCONFLICT|MILITARY|TERROR|KILL|REFUGEE|HUMANITARIAN|FAMINE|NATURAL_DISASTER|"
                           r"CEASEFIRE|DISPLACED|EPIDEMIC|GENOCIDE|AIRSTRIKE|SIEGE", re.I)
 CELEB_THEME = re.compile(r"TAX_FNCACT_(ACTRESS|ACTOR|SINGER|CELEBRIT|MUSICIAN|RAPPER|COMEDIAN|POPSTAR)|ENTERTAINMENT", re.I)
@@ -519,6 +532,8 @@ def entities(f):
     ents = set()
     if SPORT_THEME.search(f[7] or "") or SPORT_THEME.search(f[8] or ""):
         ents.add("T:sport")                           # GDELT's own topic tags mark it as sport
+    if OFFICE_THEME.search(f[7] or "") or OFFICE_THEME.search(f[8] or ""):
+        ents.add("T:office")                          # public office: leaders, ministers, legislatures
     if CRISIS_THEME.search(f[7] or "") or CRISIS_THEME.search(f[8] or ""):
         ents.add("T:crisis")                          # war, attacks, disasters, famine, refugees
     if re.search(r"(^|;)(KILL|WOUND)#", f[5] or ""):
@@ -1993,6 +2008,17 @@ def render(state, now, cmap, built):
         titles = [t[0] for t in s["ti"].values()]
         return sum(1 for t in titles if set(raw_words(t)) & words) / max(1, len(titles))
 
+    def people_story(s):
+        """A story about a famous person that is neither public office, business with impact, nor crime
+        or death ("David Beckham sues after fragrance sold in gas stations"): not world news."""
+        people = [(n, e) for e, n in s["e"].items() if e.startswith("P:")]
+        if not people or max(people)[0] < 0.5 * s["n"]:
+            return False
+        if s["e"].get("T:office", 0) >= 0.3 * s["n"]:
+            return False                              # GDELT tags it as public office
+        return headline_share(s, OFFICE | CRIME | LEADERS) < 0.25 and \
+            headline_share(s, TECH | COMPANY | MARKET_WIDE) < 0.25
+
     def conflict_of(s):
         """The armed conflict a story belongs to: where it happened, or a conflict country most of its
         reports name ("US downs Iranian drones over Bahrain" belongs to the Iran war). None otherwise."""
@@ -2192,6 +2218,8 @@ def render(state, now, cmap, built):
             skip(s, "follow-up"); continue
         if any(hs is not s and len(hs["d"]) > len(s["d"]) and same_affair(s, hs, he) for hs, he in held):
             skip(s, "fragment of held"); continue
+        if people_story(s):                           # (after follow-ups are counted for their story)
+            skip(s, "about a person"); continue
         line = make_line(sid, s, mem, section, where)
         if line is None:
             continue

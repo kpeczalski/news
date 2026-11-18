@@ -4,7 +4,8 @@
    no categories, no war names on the page. Neutral wording; claims keep who says them.
 2. Two sections, plain headings only: `// most covered` and `// crises`. No line numbers.
    (`// new in the last 3 hours` appears only when a fresh story grows fast.)
-3. Serious world news only: world impact, not people or popularity; a most-covered line needs 10+ countries.
+3. Serious world news only: world impact, not people or popularity (a story about a famous person shows
+   only if it involves public office, business with impact, a crime or a death); a most-covered line needs 10+ countries.
    Accidents state casualties ("at least 32 injured") or "no injuries reported".
 3a. Most covered: ranked by reports weighted by spread across countries (deaths up to 1.5x),
    shown by number of countries. Each line: "N countries · +N outlets/h", counter coloured by pace.
