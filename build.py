@@ -108,6 +108,7 @@ EN HR SI BK MK AL MJ RI AJ AM GG CY MT""".split(),
 }
 WORLD_REGION_OF = {c: r for r, cs in WORLD_REGIONS.items() for c in cs}
 WORLD_LINES = 5
+CYBER = set("flaw flaws vulnerability hackers patch patching java software bug".split())
 DEAL_WORDS = set("bank banks takeover stake merger acquisition acquire bid deal unicredit".split())
 CLAIM_ECHO_COUNTRIES = 10                    # a claim carried in this many countries was picked up abroad
 CEREMONY = set("anniversary anniversaries celebrates celebrate celebrated celebration commemorates commemoration ceremony mass festival".split())
@@ -2440,7 +2441,7 @@ def render(state, now, cmap, built):
         ents3 = set(top_ents(s)[:3])
         if any(same_affair(s, ps, pe) or len(ents3 & set(top_ents(ps)[:4])) >= 2 for _, ps, pe in shown_stories):
             continue                                  # a follow-up of a line already shown ("Seoul watches summit")
-        if headline_share(s, COMPANY | DEAL_WORDS) >= 0.3 and headline_share(s, OFFICE) < 0.3:
+        if headline_share(s, COMPANY | DEAL_WORDS | TECH | CYBER) >= 0.3 and headline_share(s, OFFICE) < 0.3:
             continue                                  # a company's affairs are not the region's news
         if headline_share(s, CEREMONY) >= 0.4:
             continue                                  # anniversaries and ceremonies are not the region's news
