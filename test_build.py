@@ -1141,3 +1141,11 @@ class ForecastYear(unittest.TestCase):
         self.assertEqual(B.forecast_year("Muslims projected to outnumber Christians", t),
                          "Muslims projected to outnumber Christians by 2035")
         self.assertEqual(B.forecast_year("Plan approved in 2026", t), "Plan approved in 2026")
+
+
+class MarketMove(unittest.TestCase):
+    def test_index_moves(self):
+        self.assertTrue(B.MARKET_MOVE.search("Dow taks major hit Wednesday as Nvidia rebound falters"))
+        self.assertTrue(B.MARKET_MOVE.search("Asian stocks slide as oil jumps"))
+        self.assertFalse(B.MARKET_MOVE.search("Anthropic IPO raises record $81 billion"))
+        self.assertFalse(B.MARKET_MOVE.search("Myanmar committed genocide against Rohingya minority"))

@@ -307,3 +307,4 @@ After an independent grade of the live page (5 out of 10):
 
 ## 2026-11-19 (Helsinki), daily review
 - A forecast keeps its target year ("Muslims projected to outnumber Christians" -> "... by 2035") when 30%+ of headlines give one year.
+- World page: at most 3 US-centred most-covered lines (US as event country, or most headlines about US actors); a day's stock-index move ("Dow takes major hit") is left off unless 40+ countries carry it; a headline led by a quote ranks after one that states the news; question headlines go last among sources. Owner gave carte blanche (19 Nov).

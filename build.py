@@ -119,6 +119,16 @@ NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs
 TECH = set("""ai chip chips semiconductor semiconductors nvidia apple microsoft google alphabet meta amazon tesla
 spacex starship openai anthropic tiktok samsung intel tsmc software app smartphone iphone""".split())
 TECH_LINES = 2
+# US-centred lines (the US as event country, or most headlines about US actors): at most 3 of the
+# most-covered list, so English-language press weight does not make it a US page
+US_ACTORS = set("""us u.s american americans washington trump hegseth rubio vance pentagon congress senate
+wall dow nasdaq fed""".split())
+US_LINES = 3
+# a day's stock-index move ("Dow takes major hit") is market noise, not world news, unless it is global
+MARKET_MOVE = re.compile(r"\b(dow|s&p|nasdaq|ftse|nikkei|dax|cac|hang seng|stocks?|shares|markets?|wall street)\b.*"
+                         r"\b(hit|falls?|fell|rises?|rose|rall(y|ies)|slumps?|tumbles?|gains?|drops?|surges?|edges?|"
+                         r"climbs?|slides?|sinks?|jumps?|closes?|opens?|falters?|rebounds?|record high|lower|higher)\b", re.I)
+MARKET_GLOBAL_COUNTRIES = 40
 OLD_STORY_WEIGHT = 0.5
 COMPANY = set("company companies board ceo chairman shareholders shares stock earnings startup firm".split())
 MARKET_WIDE = set("""government regulator regulators sanctions ban curbs export exports tariff tariffs markets
@@ -1665,7 +1675,9 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             resolved = bool(rw & RESOLVE) if res_share >= 0.15 else False   # the outcome, once outlets report it
             # a total over time keeps its time frame ("1,630 civilians ... this year"), or it reads as one event
             framed = bool(TIMEFRAME.search(text)) if frame_share >= 0.2 else False
-            ranked.append(((not accuses, framed, resolved, fresh, plain, told, scale, fits, specific, not amid, enough, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
+            # a headline led by a quote ("... for 'benefit of humankind'") comes after one that states the news
+            unquoted = not re.search(r"(^|\s)['‘\"“]\w", text)
+            ranked.append(((not accuses, framed, resolved, fresh, plain, told, unquoted, scale, fits, specific, not amid, enough, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
@@ -2340,7 +2352,8 @@ def render(state, now, cmap, built):
         # Sources under a line: those sharing most of its words first (no drift to another topic).
         if l.get("sentence") and l.get("headlines"):
             mine = {k for _, k, _ in scan(l["sentence"])}
-            l["headlines"].sort(key=lambda h: -len(mine & {k for _, k, _ in scan(h["t"])}))
+            # closest to the line first; a question or comment headline ("New page in history?") last
+            l["headlines"].sort(key=lambda h: ("?" in h["t"], -len(mine & {k for _, k, _ in scan(h["t"])})))
         # A model line must say who or where: at least one name after its first word
         # ("Police search for missing girls" says neither).
         if l.get("by") == "model" and l["sentence"] and \
@@ -2443,7 +2456,7 @@ def render(state, now, cmap, built):
     lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
     cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES}
     kept, per_country, per_region, shown_crises = [], Counter(), Counter(), set()
-    tech_shown = 0
+    tech_shown = us_shown = 0
     for l in lines:                         # spares fill only gaps; caps count lines actually shown
         where = l.pop("_where", None)
         region = REGION_OF.get(where or "", "other")
@@ -2454,6 +2467,11 @@ def render(state, now, cmap, built):
             if tech_shown >= TECH_LINES:
                 continue                              # at most 2 tech or company stories: room for the world
             tech_shown += 1
+        hl = [h["t"] for h in l.get("headlines", [])] or [l["sentence"]]
+        if l["section"] in ("day", "new") and l["countries"] < MARKET_GLOBAL_COUNTRIES and \
+                sum(1 for t in hl + [l["sentence"]] if MARKET_MOVE.search(t)) > 0.5 * (len(hl) + 1):
+            continue                                  # a day's index move is not world news
+        us = where == "US" or sum(1 for t in hl if set(raw_words(t)) & US_ACTORS) >= 0.5 * len(hl)
         if l["section"] == "day" and l["score"] < DAY_MIN_SCORE and \
                 sum(1 for k in kept if k["section"] == "day") >= DAY_FILL_LINES:
             continue                                  # smaller stories only fill a thin page (nights, weekends)
@@ -2462,6 +2480,11 @@ def render(state, now, cmap, built):
         if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
                 or (region != "other" and per_region[region] >= PER_REGION):
             continue
+        if l["section"] == "day" and us:
+            if us_shown >= US_LINES:
+                DIAG.setdefault("skipped", []).append({"why": "US cap", "score": l["score"], "line": l["sentence"]})
+                continue                              # at most 3 US-centred lines: a world page
+            us_shown += 1
         cap[l["section"]] -= 1
         kept.append(l)
         if l["section"] == "ongoing":
