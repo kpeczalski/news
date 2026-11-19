@@ -63,26 +63,30 @@ CRISIS_SECTION = True
 GOOD_ONLY = os.environ.get("GOOD_ONLY", "1") == "1"
 TONE_POS = 1.0                                # article tone at or above this is positive
 TONE_NEG = -1.5                               # ... at or below this, negative
-GOOD_POS_SHARE = 0.5                          # a good story: half its toned articles positive ...
-GOOD_NEG_SHARE = 0.25                         # ... and at most a quarter negative
-GOOD_MIN_SCORE = 3                            # good news is rarer: a smaller story can lead
-GOOD_MIN_COUNTRIES = 5                        # most covered good news: outlets in 5+ countries
+GOOD_POS_SHARE = 0.5                          # (unless half read positive)
+GOOD_NEG_SHARE = 0.4                          # a story whose articles mostly read negative is not good news
+GOOD_MIN_SCORE = 1                            # good news is rarer: a smaller story can lead
+GOOD_MIN_COUNTRIES = 3                        # most covered good news: outlets in 5+ countries
 BAD_WORDS = set("""killed kills kill dead dies died death deaths wounded injured attack attacks strike strikes
 war bomb bombing shooting crash crashed collapse fire blaze flood floods earthquake missing murder murdered
 arrested charged convicted sentenced jailed accused abuse fraud scandal sanctions threat threatens warns
 crisis disaster tragedy victims hostage hostages kidnapped raid raids protest protests riot riots clashes
 recession layoffs cuts outbreak virus disease cancer toxic pollution drought famine refugees migrants""".split())
-GOOD_WORDS = set("""breakthrough cure cured discover discovered discovery first record saves saved rescue rescued
-rescues peace ceasefire treaty restored reopens reopened returns recovers recovery wins win won award
-awarded prize honoured honored celebrates approves approved launches launched opens unveils vaccine treatment
-therapy protects protected conservation endangered rebounds hope milestone success successful
-reunited donates donation volunteers free clean renewable solar planted""".split())
-SCIENCE_WORDS = set("""study researchers scientists research discovered discovery breakthrough telescope astronomers
-fossil fossils species trial vaccine treatment therapy gene genes dna cells physicists quantum archaeologists
-ancient spacecraft mission probe planet galaxy comet asteroid mars moon nasa esa cern experiment engineers
-battery fusion medicine drug drugs university journal published nature""".split())
+GOOD_WORDS = set("""breakthrough breakthroughs cure cured cures rescue rescued rescues saved saves peace ceasefire
+truce treaty restored restores recovers recovery reunited reunites donates donated donation volunteers vaccine
+vaccines conservation protected endangered milestone eradicated eliminated renewable reforestation planted freed
+exonerated survivor survives transplant heals healed lifesaving reunion homecoming discovery discovered
+unearthed""".split())
+# entertainment, lifestyle and shows read positive but are not the world's good news
+LIGHT_WORDS = set("""awards award cma cmas grammy grammys oscars emmy album song songs singer concert tour star stars
+celebrity fans movie film films tv series season episode premiere trailer festival music musician band rapper
+christmas thanksgiving holiday recipe recipes tips review hotel fashion style hairstyle birthday wedding
+royal dating actress actor show shows game games netflix disney""".split())
+SCIENCE_WORDS = set("""study studies researchers scientists discovered discovery breakthrough telescope
+astronomers fossil fossils species vaccine therapy gene genes dna physicists quantum archaeologists
+archaeological spacecraft planet galaxy comet asteroid nasa esa cern experiment fusion""".split())
 SCIENCE_LINES = 4                             # "// discoveries": research advances
-SCIENCE_MIN_COUNTRIES = 3
+SCIENCE_MIN_COUNTRIES = 2
 ONGOING_LINES = 6                             # crises: one line per conflict with a violent event today
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
 # Known armed conflicts (from the list of ongoing wars with 1,000+ deaths a year; check it now and
@@ -135,7 +139,8 @@ EN HR SI BK MK AL MJ RI AJ AM GG CY MT""".split(),
 WORLD_REGION_OF = {c: r for r, cs in WORLD_REGIONS.items() for c in cs}
 WORLD_LINES = 5
 FOLLOW_UP = set("inquiry inquest investigators finds findings anniversary retrial".split())
-MARKET_WORDS = set("stocks shares markets ipo investors valuation earnings profit revenue dow nasdaq".split())
+MARKET_WORDS = set("""stocks shares markets ipo investors valuation earnings profit revenue dow nasdaq lists listing
+listed otc otcqb nyse delivers customers clients""".split())
 CYBER = set("flaw flaws vulnerability hackers patch patching java software bug".split())
 DEAL_WORDS = set("bank banks takeover stake merger acquisition acquire bid deal unicredit".split())
 CLAIM_ECHO_COUNTRIES = 10                    # a claim carried in this many countries was picked up abroad
@@ -2276,8 +2281,8 @@ def render(state, now, cmap, built):
         say something good happened ("rescued", "breakthrough", "peace") or tell a research advance.
         Money and company affairs are not good news here."""
         toned, pos, neg = tone_shares(s)
-        if toned < 3 or pos < GOOD_POS_SHARE or neg > GOOD_NEG_SHARE:
-            return False
+        if toned >= 3 and neg > GOOD_NEG_SHARE and pos < GOOD_POS_SHARE:
+            return False                              # the articles themselves read as bad news
         n = max(1, s["n"])
         if s["e"].get("T:crisis", 0) >= 0.3 * n or s["e"].get("T:death", 0) >= 0.1 * n:
             return False
@@ -2285,13 +2290,16 @@ def render(state, now, cmap, built):
             return False
         if headline_share(s, COMPANY | DEAL_WORDS | MARKET_WORDS) >= 0.3:
             return False
-        return headline_share(s, GOOD_WORDS | SCIENCE_WORDS) >= 0.25
+        if headline_share(s, LIGHT_WORDS) >= 0.15 or s["e"].get("T:celeb", 0) >= 0.1 * n:
+            return False                              # shows, stars and lifestyle are not the world's good news
+        return headline_share(s, GOOD_WORDS) >= 0.3
 
     def science(s):
         """A research advance: most headlines tell a study, a discovery or a mission; not bad news."""
         toned, pos, neg = tone_shares(s)
         return headline_share(s, SCIENCE_WORDS) >= 0.4 and headline_share(s, BAD_WORDS) < 0.2 \
-            and (toned < 3 or neg <= 0.4) and headline_share(s, COMPANY | DEAL_WORDS | MARKET_WORDS) < 0.3
+            and headline_share(s, LIGHT_WORDS | OFFICE) < 0.2 \
+            and (toned < 3 or neg <= 0.6) and headline_share(s, COMPANY | DEAL_WORDS | MARKET_WORDS) < 0.3
 
     def conflict_of(s):
         """The armed conflict a story belongs to: where it happened, or a conflict country most of its
@@ -2389,6 +2397,9 @@ def render(state, now, cmap, built):
     wide = sorted((sid for sid in stories if len(members(stories[sid])) >= MIN_OUTLETS),
                   key=lambda sid: (-countries(stories[sid]), -len(members(stories[sid]))))[:PRE_BY_COUNTRIES]
     pre = list(dict.fromkeys(big + wide))
+    if GOOD_ONLY:                                     # good news is small: every candidate is ranked
+        pre += [sid for sid, st in stories.items() if sid not in pre and len(members(st)) >= MIN_OUTLETS
+                and (headline_share(st, GOOD_WORDS) >= 0.3 or headline_share(st, SCIENCE_WORDS) >= 0.4)]
     by_token = defaultdict(set)
     for sid, st in stories.items():
         if len(st["d"]) >= 2:
@@ -2484,17 +2495,17 @@ def render(state, now, cmap, built):
         section = "new" if s["first"] > now - NEW_AGE else "day"
         if score(s)[0] < (GOOD_MIN_SCORE if GOOD_ONLY else NEW_MIN_SCORE if section == "new" else DAY_FILL_SCORE):
             skip(s, "small"); continue  # too small to list
-        if not worldwide_enough(s):
-            skip(s, "not worldwide"); continue
+        if not GOOD_ONLY and not worldwide_enough(s):
+            skip(s, "not worldwide"); continue        # (good news is rarer: 3+ countries is enough)
         if is_crisis(s):
             skip(s, "crises section"); continue
         if s["e"].get("T:celeb", 0) >= 0.2 * max(1, s["n"]):
             skip(s, "celebrity"); continue
         if s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]):
             skip(s, "sport"); continue  # sport, by GDELT's topic tags
-        if GOOD_ONLY and not good(s):
-            skip(s, "not good news"); continue
-        if cmap and domestic(s) and len(s["f"]) < DOMESTIC_KEEP and s["n"] < DOMESTIC_EXCEPTIONAL:
+        if GOOD_ONLY and (science(s) or not good(s)):
+            skip(s, "not good news"); continue        # (research goes to "discoveries")
+        if cmap and not GOOD_ONLY and domestic(s) and len(s["f"]) < DOMESTIC_KEEP and s["n"] < DOMESTIC_EXCEPTIONAL:
             skip(s, "domestic"); continue  # domestic news, unless the world's press carries it
         where = event_country(s)
         if where and per_country[where] >= PER_COUNTRY + 1:
@@ -2579,7 +2590,7 @@ def render(state, now, cmap, built):
         made_sci = 0
         for sid in sorted(sci, key=lambda x: -score(stories[x])[0]):
             st = stories[sid]
-            if made_sci >= SCIENCE_LINES + SPARE_LINES or people_story(st) \
+            if made_sci >= SCIENCE_LINES + SPARE_LINES \
                     or st["e"].get("T:celeb", 0) >= 0.2 * max(1, st["n"]) \
                     or any(same_affair(st, ps, pe) for _, ps, pe in shown_stories):
                 continue

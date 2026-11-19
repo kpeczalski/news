@@ -348,3 +348,4 @@ After an independent grade of the live page (5 out of 10):
 
 ## 2026-11-19 (Helsinki), good news only (owner)
 - The page now shows only positive or inspiring stories and research advances: "// good news", "// discoveries", "// around the world". GDELT tone of each article is read (T:pos, T:neg); the last 24 hours are re-read once for tone. Crises and the old selection stay in the code behind GOOD_ONLY=0.
+- Good news tuned: tone is a veto (mostly negative articles are left off), not the test; the headlines must tell a rescue, cure, peace, release or discovery; shows, stars, lifestyle, money and listings are left off; all small good stories are ranked; 3+ countries (2+ for discoveries).
