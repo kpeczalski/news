@@ -48,7 +48,7 @@ DEATH_WORDS = set("killed kills kill dead dies died death deaths wounded injured
 CRISIS_WORDS = set("""attack attacks attacked barrage airstrike airstrikes strike strikes struck bombing bombed
 shelling shelled missile missiles drone drones offensive invasion militants fighting clashes gunmen ambush
 earthquake flood floods cyclone hurricane typhoon famine massacre bomb bombs bombings blast blasts explosion
-explosions explosive assassination assassinated shooting gunfire""".split())
+explosions explosive assassination assassinated shooting gunfire tanks incursion incursions raid raids""".split())
 # An accident is not a crisis, even where there is a war, unless the world covers it.
 ACCIDENT_WORDS = set("""crash crashes crashed collision collides collided accident accidents collapse collapses
 collapsed collide derails derailed capsizes capsized stampede blaze mine miners methane leak taxiway runway""".split())
@@ -57,7 +57,7 @@ NOT_EVENT = set("""calls urges accuses condemns slams warns vows presses tells v
 sentences sentenced sentencing court trial verdict convicted jailed charged funeral mourns sanctions
 sanction sanctioned imposes condemn condemned threatens threaten threatened threat threats""".split())
 CRISIS_SECTION = True
-ONGOING_LINES = 4                             # "ongoing": crises covered most over the last days
+ONGOING_LINES = 6                             # crises: one line per conflict with a violent event today
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
 # Known armed conflicts (from the list of ongoing wars with 1,000+ deaths a year; check it now and
 # then). Countries of one conflict count as one crisis: one line, history added together.
@@ -82,6 +82,8 @@ ONGOING_STORIES = 4                           # separate crisis stories about on
 CRISIS_DEADLY = 10                            # a crisis event with this many killed ...
 CRISIS_DEADLY_COUNTRIES = 3                   # ... needs only this many countries
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
+PRE_BY_OUTLETS = 150                          # stories ranked: the largest by outlets...
+PRE_BY_COUNTRIES = 100                        # ...plus those carried in the most countries
 PER_COUNTRY = 2                               # at most this many lines about events in one country
 PER_REGION = 3                                # and at most this many about one world region
 # Regions by GDELT (FIPS) country code; anything not listed counts as "other".
@@ -1498,7 +1500,7 @@ NUM_DISPLAY = {w: d for w, d in NUMWORDS.items() if w != "one"}      # "one" is 
 
 TOLL_RE = re.compile(r"\b(\d[\d,]*)(?:\s*[-–]\s*\d[\d,]*)?\s+(?:[A-Za-z'-]+\s+){0,3}?"
                      r"(dead|killed|deaths|die|died|injured|wounded|hurt|casualties)\b"
-                     r"|\b(kills?|killing|injures?|injure|wounds?)\s+(?:at least\s+|around\s+|about\s+|nearly\s+|"
+                     r"|\b(kills?|killed|killing|injures?|injure|wounds?)\s+(?:at least\s+|around\s+|about\s+|nearly\s+|"
                      r"over\s+|more than\s+)?(\d[\d,]*)", re.I)
 
 
@@ -2079,7 +2081,15 @@ def render(state, now, cmap, built):
         return CRISIS_SECTION and headline_share(s, CRISIS_WORDS | VIOLENT_DEATH) >= 0.4 \
             and headline_share(s, NOT_EVENT) < 0.4 \
             and (headline_share(s, ACCIDENT_WORDS) < 0.3 or countries(s) >= BIG_DISASTER_COUNTRIES) \
-            and (conflict_of(s) is not None or countries(s) >= BIG_DISASTER_COUNTRIES)
+            and (conflict_of(s) is not None or countries(s) >= BIG_DISASTER_COUNTRIES) \
+            and not leader_speech(s)
+
+    def leader_speech(s):
+        """A leader's words about violence, with no one reported harmed ("Trump says US taking Iran
+        dirty bomb threat seriously"): a speech, which stays in most covered."""
+        titles = [t[0] for t in s["ti"].values()]
+        said = sum(1 for t in titles if set(raw_words(t)) & SPEECH and set(raw_words(t)) & LEADERS)
+        return said >= 0.5 * max(1, len(titles)) and toll(titles) == (0, 0)
 
     def event_country(s):
         codes = [(c, e[2:]) for e, c in s["e"].items() if e.startswith("K:")]
@@ -2120,6 +2130,12 @@ def render(state, now, cmap, built):
         # Or two shared names plus one such word ("Microsoft" + "Exchange Online" + "outage").
         return len(shared) >= 2 and bool(event_words)
 
+    def same_scene(a, b):
+        """Two stories of one conflict told at the same places or by the same people: two or more names
+        (places, people) each in a fifth or more of both stories' reports ("Deir al-Balah", "Gaza City")."""
+        return sum(1 for e, n in a["e"].items() if e[:2] in ("L:", "P:") and n >= 0.2 * max(1, a["n"])
+                   and b["e"].get(e, 0) >= 0.2 * max(1, b["n"])) >= 2
+
     def same_event(a, b):
         ta, tb = set(top_tokens(a)), set(top_tokens(b))
         if not ta or not tb:
@@ -2137,7 +2153,13 @@ def render(state, now, cmap, built):
         return same_affair(b, a, set(top_ents(a)[:3]))      # fragments of one big event
 
     # Cheap pre-rank by size, then fold fragments of one event among the leaders, then exact rank.
-    pre = sorted(stories, key=lambda sid: -len(stories[sid]["d"]))[:150]
+    # Pre-rank: the largest stories by outlets, plus those carried in the most countries. By outlets
+    # alone, syndicated local news of one big press (hundreds of US papers) fills the list, and an event
+    # reported in 12 countries by 30 outlets (Gaza, Fiji) is never ranked at all.
+    big = sorted(stories, key=lambda sid: -len(stories[sid]["d"]))[:PRE_BY_OUTLETS]
+    wide = sorted((sid for sid in stories if len(members(stories[sid])) >= MIN_OUTLETS),
+                  key=lambda sid: (-countries(stories[sid]), -len(members(stories[sid]))))[:PRE_BY_COUNTRIES]
+    pre = list(dict.fromkeys(big + wide))
     by_token = defaultdict(set)
     for sid, st in stories.items():
         if len(st["d"]) >= 2:
@@ -2178,8 +2200,9 @@ def render(state, now, cmap, built):
         key, text, tags, ckeys = consensus(s, now)
         if not key:
             return None
-        if cmap and "claim" in tags and not s["f"]:
+        if cmap and "claim" in tags and not s["f"] and section != "ongoing":
             return None                                  # a remark nobody abroad picked up is not an event
+            # (a crisis event is not a remark: a toll one side claims is kept, at half weight)
         heads, links = sources(s, ckeys, where, cmap)
         all_titles = [t[0] for t in s["ti"].values() if not t[3]]
         renowned = {}
@@ -2319,7 +2342,11 @@ def render(state, now, cmap, built):
             if toll([t[0] for t in stories[it[1]]["ti"].values()])[0] >= CRISIS_DEADLY:
                 need = min(need, CRISIS_DEADLY_COUNTRIES)
             return countries(stories[it[1]]) >= need
-        ranked_items = sorted((it for it in items if it[0] >= 4 and wide_enough(it)), key=rank, reverse=True)
+        # Coverage weight (4+) is not asked of a deadly event (10+ killed): its own country's press carries
+        # it, which the score discounts as domestic, and lives come first.
+        def big_enough(it):
+            return it[0] >= 4 or toll([t[0] for t in stories[it[1]]["ti"].values()])[0] >= CRISIS_DEADLY
+        ranked_items = sorted((it for it in items if big_enough(it) and wide_enough(it)), key=rank, reverse=True)
         best, sid, _ = ranked_items[0] if ranked_items else (0, None, 0)
         backups = [it[1] for it in ranked_items[1:3]]
         if sid is None or (not worldwide_enough(stories[sid]) and days_on < 3):
@@ -2339,8 +2366,12 @@ def render(state, now, cmap, built):
         weight = 2 + 2 * math.log10(1 + k + h / 4) if (k or h) else UNKNOWN_TOLL_WEIGHT
         claimed = headline_share(st, SPEECH) >= 0.5
         record = len({d for d in st["ti"] if source_rank(d, st["ti"][d][1]) < pref_rank("reuters.com")}) >= 2
-        crises.append((recency * weight * (0.5 if claimed else 1) * (1.2 if record else 1), sid, w, days_on, backups))
+        crises.append((bool(k or h), recency * weight * (0.5 if claimed else 1) * (1.2 if record else 1),
+                       sid, w, days_on, backups))
+    # Lives first: any event with people killed or injured comes before one with no harm to people
+    # reported, however recent or reliable that one is; recency and reliability order within each.
     crises.sort(reverse=True)
+    crises = [c[1:] for c in crises]
     added = 0
     for _, sid, where, days_on, backups in crises:
         if added >= ONGOING_LINES + SPARE_LINES:
@@ -2465,6 +2496,15 @@ def render(state, now, cmap, built):
     DIAG.setdefault("skipped", []).extend({"why": "no clear sentence", "score": l["score"], "line": l["key"] + ": " + l["text"]}
                                           for l in lines if not l["sentence"])
     lines = [l for l in lines if l["sentence"] or l["score"] >= COUNTED_MIN_SCORE]
+    # One event once: a most-covered story that is a fragment of a crisis line's event (the same
+    # conflict, the event's main names: "Israel begins Gaza ground operation" beside "Dozens flee
+    # Israeli tanks in Gaza") is left off; the crisis line tells it.
+    crisis_ev = [(stories[l["id"]], set(top_ents(stories[l["id"]])[:3])) for l in lines if l["section"] == "ongoing"]
+    lines = [l for l in lines if l["section"] == "ongoing" or not any(
+        conflict_of(stories[l["id"]]) == conflict_of(cs) and
+        headline_share(stories[l["id"]], CRISIS_WORDS | VIOLENT_DEATH) >= 0.2 and
+        (same_event(cs, stories[l["id"]]) or same_affair(stories[l["id"]], cs, ce) or same_scene(cs, stories[l["id"]]))
+        for cs, ce in crisis_ev)]
     cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES}
     kept, per_country, per_region, shown_crises = [], Counter(), Counter(), set()
     tech_shown = us_shown = 0

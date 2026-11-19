@@ -1156,3 +1156,87 @@ class NameListCut(unittest.TestCase):
         t = ["Trump says summit with Xi, Putin 'making history'"] * 3
         got = B.common_headline(t, ["trump", "summit", "xi", "putin"], counted="trump summit xi putin")
         self.assertNotEqual(got, "Trump says summit with Xi")
+
+
+class Selection(unittest.TestCase):
+    """World balance and the crises section (selection rules of 19 Nov)."""
+    def setUp(self):
+        self._saved = (B.MIN_OUTLETS, B.NAME_MIN, B.CRISIS_SECTION, B.PRE_BY_OUTLETS, B.PRE_BY_COUNTRIES)
+        B.MIN_OUTLETS, B.NAME_MIN, B.CRISIS_SECTION = 3, 3, True
+
+    def tearDown(self):
+        B.MIN_OUTLETS, B.NAME_MIN, B.CRISIS_SECTION, B.PRE_BY_OUTLETS, B.PRE_BY_COUNTRIES = self._saved
+
+    def ongoing(self, p):
+        return [l["sentence"] or l["key"] for l in p["lines"] if l["section"] == "ongoing"]
+
+    def test_widely_spread_small_story_is_ranked(self):
+        # Many outlets of one country (syndicated local news) must not crowd out a story that
+        # fewer outlets carry in many countries.
+        topics = ["Harbor festival draws record crowds", "County fair crowns pumpkin champion",
+                  "School board approves bus contract"]
+        local = [art("u%d%d.com" % (j, i), "%s, edition %d" % (t, i), "3#Springfield, Illinois, United States#US#USIL#1#1#1")
+                 for j, t in enumerate(topics) for i in range(8)]
+        world = [art("w%d.com" % i, "Fiji declares state of disaster amid drought, report %d" % i,
+                     "1#Fiji#FJ#FJ#1#1#FJ") for i in range(4)]
+        cmap = {a["domain"]: "US" for a in local}
+        cmap.update({"w%d.com" % i: "C%d" % i for i in range(4)})
+        B.PRE_BY_OUTLETS, B.PRE_BY_COUNTRIES = 2, 2
+        _, p = run([(100, local + world, [])], cmap=cmap)
+        self.assertIn("fiji", [l["key"] for l in p["lines"]])
+        B.PRE_BY_COUNTRIES = 0                        # by outlets alone it is never ranked
+        _, p = run([(100, local + world, [])], cmap=cmap)
+        self.assertNotIn("fiji", [l["key"] for l in p["lines"]])
+
+    def test_deadly_event_reaches_crises_with_little_coverage(self):
+        # 22 killed, 3 countries, no outlet in another language, a toll one side claims: listed
+        # (lives first; conflicts in Africa and Asia get few foreign outlets).
+        self.assertEqual(B.toll(["Pakistan military says it killed 22 militants in raids"]), (22, 0))
+        pk = "4#Peshawar, Khyber Pakhtunkhwa, Pakistan#PK#PK02#1#1#1"
+        arts = [art("p%d.com" % i, t, pk) for i, t in enumerate([
+            "Pakistan military says it killed 22 militants in raids on hideouts in northwest",
+            "Pakistan military says it killed 22 militants in raids on hideouts in northwest",
+            "Pakistan military kills 22 militants in raids on hideouts in northwest"])]
+        _, p = run([(100, arts, [])], cmap={"p0.com": "PK", "p1.com": "IN", "p2.com": "UK"})
+        self.assertEqual(len(self.ongoing(p)), 1)
+        self.assertIn("22", self.ongoing(p)[0])
+
+    def test_ground_assault_is_a_crisis_event(self):
+        gz = "4#Gaza City, Gaza#GZ#GZ00#1#1#1"
+        arts = [art("g%d.com" % i, "Israeli tanks advance into central Gaza, dozens flee, report %d" % i, gz)
+                for i in range(10)]
+        _, p = run([(100, arts, [])], cmap={"g%d.com" % i: "C%d" % i for i in range(10)})
+        self.assertEqual([l["section"] for l in p["lines"]], ["ongoing"])
+
+    def test_people_harmed_come_first(self):
+        # An older event with people killed comes before a fresh one with no one harmed reported.
+        ua = "4#Kerch, Crimea, Ukraine#UP#UP11#1#1#1"
+        ye = "4#Marib, Yemen#YM#YM00#1#1#1"
+        harmed = [art("y%d.com" % i, "Airstrike kills 5 in Marib market, report %d" % i, ye) for i in range(6)]
+        fresh = [art("k%d.com" % i, "Drone strike hits Kerch bridge, report %d" % i, ua) for i in range(6)]
+        cmap = {"%s%d.com" % (c, i): "C%d" % i for c in "yk" for i in range(6)}
+        _, p = run([(100, harmed, []), (150, fresh, [])], cmap=cmap)
+        self.assertEqual(len(self.ongoing(p)), 2)
+        self.assertIn("5", self.ongoing(p)[0])
+
+    def test_one_event_is_not_in_both_sections(self):
+        # The crisis line tells the event; a most-covered story of the same conflict at the same
+        # places (Deir al-Balah, Gaza City) is not listed again.
+        locs = "4#Deir al-Balah, Gaza#GZ#GZ00#1#1#1;4#Gaza City, Gaza#GZ#GZ00#1#1#1"
+        crisis = [art("g%d.com" % i, "Israeli tanks roll into central Gaza, dozens flee, report %d" % i, locs)
+                  for i in range(10)]
+        heads = ["Army ends Gaza ground operation", "Gaza ground operation ends after two days",
+                 "Army completes ground operation in central Gaza", "Gaza ground offensive over",
+                 "Army ends ground operation near Deir al-Balah"]
+        other = [art("h%d.com" % i, t, locs) for i, t in enumerate(heads)]
+        cmap = {"%s%d.com" % (c, i): "C%d" % i for c in "gh" for i in range(10)}
+        _, p = run([(100, crisis + other, [])], cmap=cmap)
+        self.assertEqual([l["section"] for l in p["lines"]], ["ongoing"])
+
+    def test_leader_speech_is_not_a_crisis_event(self):
+        ir = "1#Iran#IR#IR#1#1#IR"
+        arts = [art("t%d.com" % i, "Trump says US will strike Iran missile sites, remark %d" % i, ir) for i in range(6)]
+        B.DIAG["skipped"] = []
+        _, p = run([(100, arts, [])], cmap={"t%d.com" % i: "C%d" % i for i in range(6)})
+        self.assertEqual(self.ongoing(p), [])
+        self.assertNotIn("crises section", [k["why"] for k in B.DIAG["skipped"]])

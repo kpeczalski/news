@@ -311,3 +311,10 @@ After an independent grade of the live page (5 out of 10):
 - Crises: an event with 10+ killed needs 3 countries instead of 5 (lives first; conflicts in Africa and Asia get fewer foreign outlets).
 - Headline cut: never inside a list of names ("Trump says summit with Xi, Putin ..." was cut to "Trump says summit with Xi"); the quote rule is judged on the printed headline, so cutting a quote off no longer wins.
 - Phone: larger tap targets for sources and copy link (about 41px), opened sources 16px, narrower empty gutter; the counter stays small (owner asked) but at full opacity.
+
+## 2026-11-19 (Helsinki), selection review
+- Stories are ranked from the 150 largest by outlets plus the 100 carried in most countries: syndicated US/UK local news no longer crowds out events that 30 outlets carry in 12+ countries (the Gaza ground operation was never ranked).
+- Crises reach more conflicts: tanks, incursions and raids are violent events; "killed 22 militants" is read as a toll; a deadly event (10+ killed, 3+ countries) needs no coverage weight and may be a claimed toll (shown with its source, half weight); up to 6 crisis lines.
+- Lives first, strictly: any event with people killed or injured is ordered before one with no harm to people reported.
+- One event once: a most-covered story of the same conflict at the same places as a crisis line is left off.
+- A leader's statement about violence with no one harmed ("Trump says US will strike...") is a speech, not a crisis event.

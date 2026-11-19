@@ -11,7 +11,7 @@
    shown by number of countries. Each line: "N countries · +N outlets/h", counter coloured by pace.
 4. Crises: violent events (not accidents, speeches or war politics) in an ongoing armed conflict (public list of 1,000+
    deaths a year), plus disasters or attacks covered in 20+ countries. Speeches, talks and
-   sanctions stay in most covered. One line per conflict (countries of one conflict count as one).
+   sanctions stay in most covered. One line per conflict (countries of one conflict count as one), up to 6. A most-covered story that is the same event as a crisis line is left off.
 5. Crisis order: lives first, then recency and reliability; never press coverage. Toll (killed,
    injured/4) on a log scale; any person harmed outweighs an event with no harm to people reported (deaths outweigh
    damage to things); recency halves after 6 h; a toll only one side claims counts half; two papers
