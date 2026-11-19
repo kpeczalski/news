@@ -37,3 +37,8 @@ readability 10.
 - Fixed: forecast without its year.
 - Not changed: "Dow taks..." typo is copied from one wire headline reprinted widely (no reliable typo check from headlines alone); the reviewer's US-actor cap and per-region crisis slot would change principles (worldwide by coverage, crises by lives) and need the owner; "· ·" was in the review dump, not on the page.
 - Limits: Sudan, DR Congo, Gaza had no event in 5+ countries today.
+
+## 2026-11-19 19:30 (Helsinki), re-grade after changes (sonnet)
+- Accuracy 6, selection 5, readability 7 (Dow line gone; US cap held).
+- Then: deadly crisis events (10+ killed) need 3 countries, not 5.
+- Not changed: Houthi line states the damage as most headlines do (principle 6); Anthropic quote headline is the only one passing the number check (figures differ: $81bn, $83/share, $1.5tn).

@@ -79,6 +79,8 @@ BIG_EVENT = set("resigns resign resigned dies died arrested ousted sacked quits 
 FUTURE = set("will plans plan planned set expected scheduled upcoming ahead could may".split())
 ONGOING_DAYS = 7
 ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
+CRISIS_DEADLY = 10                            # a crisis event with this many killed ...
+CRISIS_DEADLY_COUNTRIES = 3                   # ... needs only this many countries
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
 PER_COUNTRY = 2                               # at most this many lines about events in one country
 PER_REGION = 3                                # and at most this many about one world region
@@ -2307,8 +2309,14 @@ def render(state, now, cmap, built):
         # Only events reported about as widely as the conflict's main event: a cumulative figure in a few
         # outlets ("245 children killed since ...") is not the day's event.
         widest = max((countries(stories[it[1]]) for it in items), default=0)
-        ranked_items = sorted((it for it in items if it[0] >= 4
-                               and countries(stories[it[1]]) >= max(5, 0.25 * widest)), key=rank, reverse=True)
+        # (a deadly event, 10+ killed, needs only 3 countries: conflicts in Africa and Asia are covered
+        # by fewer foreign outlets, and lives come first)
+        def wide_enough(it):
+            need = max(5, 0.25 * widest)
+            if toll([t[0] for t in stories[it[1]]["ti"].values()])[0] >= CRISIS_DEADLY:
+                need = min(need, CRISIS_DEADLY_COUNTRIES)
+            return countries(stories[it[1]]) >= need
+        ranked_items = sorted((it for it in items if it[0] >= 4 and wide_enough(it)), key=rank, reverse=True)
         best, sid, _ = ranked_items[0] if ranked_items else (0, None, 0)
         backups = [it[1] for it in ranked_items[1:3]]
         if sid is None or (not worldwide_enough(stories[sid]) and days_on < 3):
