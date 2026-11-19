@@ -325,3 +325,4 @@ After an independent grade of the live page (5 out of 10):
 - Crisis lines keep who says it when a quarter of headlines attribute the event ("Riyadh's skyscraper damaged as Saudi reports new Houthi attacks").
 - Around the world: 3+ countries.
 - Opened line: "also reported by" label; facts in plain words ("56 different headlines", "59 in other languages", sparkline "last 3 h"), never broken mid-phrase.
+- Crises shown lives first also when a backup line replaces a conflict's first pick.

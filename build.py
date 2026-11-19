@@ -2639,7 +2639,8 @@ def render(state, now, cmap, built):
     # the page still uses the full score).
     lines = [l for l in lines if l["section"] == "new"] + \
         sorted([l for l in lines if l["section"] == "day"], key=lambda l: -l["countries"]) + \
-        [l for l in lines if l["section"] == "ongoing"] + \
+        sorted([l for l in lines if l["section"] == "ongoing"],          # lives first, also after a backup
+               key=lambda l: event_toll([t[0] for t in stories[l["id"]]["ti"].values()]) == (0, 0)) + \
         [l for l in lines if l["section"] == "world"]
     for l in lines:
         l.pop("_where_kept", None)
