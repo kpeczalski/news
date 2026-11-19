@@ -2,7 +2,7 @@
 
 1. Just facts. Lines are what outlets report: no background, no context lines, no labels,
    no categories, no war names on the page. Neutral wording; claims keep who says them.
-2. Two sections, plain headings only: `// most covered` and `// crises`. No line numbers.
+2. Three sections, plain headings only: `// most covered`, `// crises` and `// around the world`. No line numbers.
    (`// new in the last 3 hours` appears only when a fresh story grows fast.)
 3. Serious world news only: world impact, not people or popularity (a story about a famous person shows
    only if it involves public office, business with impact, a crime or a death); a most-covered line needs 10+ countries.
@@ -25,6 +25,9 @@
    line passes the same checks. Refuse clickbait, verdict words, celebrity and sport.
 9. It runs without anyone: free GitHub hosting, free Groq model with a small local fallback,
    loaded only when needed. Keep the footprint small.
+4a. Around the world: the biggest story of each region (Africa, Asia-Pacific, Latin America, Europe,
+   the Middle East) that most covered does not already fill (2+ lines), carried in 4+ countries, same
+   checks as most covered, no ceremonies or index moves; up to 5 lines (owner, 19 Nov).
 9b. Selection gives a worldwide perspective, not one country's: never tailor to the owner's country.
    At most 3 US-centred most-covered lines; no daily stock-index moves unless covered in 40+ countries
    (owner gave carte blanche for score improvements, 19 Nov).

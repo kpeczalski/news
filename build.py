@@ -94,6 +94,23 @@ REGIONS = {
     "asia_pacific": "CH JA KS KN TW HK IN PK BG CE NP AF ID MY SN RP TH VM BM CB LA AS NZ MG KZ UZ".split(),
 }
 REGION_OF = {c: r for r, cs in REGIONS.items() for c in cs}
+# "Around the world": one line for each region the most-covered list leaves out (FIPS codes)
+WORLD_REGIONS = {
+    "africa": """SU OD ET SO KE UG TZ RW CG CF NI GH SF ZI AO SG ML NG UV CM CD CT MZ MA ZA MI WA BC IV GV SL
+LI BN TO ER DJ EG LY TS AG MO BY GA EK WZ LT SE MP CV GB PU""".split(),
+    "middle_east": "IS WE GZ LE SY IZ IR SA AE KU QA BA MU YM JO TU".split(),
+    "asia_pacific": """CH JA KS KN TW HK IN PK BG CE NP AF ID MY SN RP TH VM BM CB LA AS NZ MG KZ UZ TI TX KG
+BT MV BX TT PP FJ""".split(),
+    "latin_america": "MX BR AR CI CO PE VE EC BL UY PA GT HO CS CU DR HA JM ES NU PA".split(),
+    "europe": """UK EI FR GM IT SP PO NL BE LU SZ AU DA NO SW FI IC EZ LO PL HU RO BU GR UP RS BO MD LH LG
+EN HR SI BK MK AL MJ RI AJ AM GG CY MT""".split(),
+}
+WORLD_REGION_OF = {c: r for r, cs in WORLD_REGIONS.items() for c in cs}
+WORLD_LINES = 5
+CEREMONY = set("anniversary anniversaries celebrates celebrate celebrated celebration commemorates commemoration ceremony mass festival".split())
+WORLD_MIN_COUNTRIES = 4                       # picked up abroad, not only at home
+WORLD_MIN_SCORE = 3
+SPARE_WORLD = 1                               # a second candidate per region, in case one gets no sentence
 # Spellings that differ between languages and transliterations, folded to one name for matching.
 ALIASES = {"kiev": "kyiv", "kiew": "kyiv", "kijev": "kyiv", "peking": "beijing", "bombay": "mumbai",
            "calcutta": "kolkata", "rangoon": "yangon", "burma": "myanmar", "ivory coast": "cote divoire",
@@ -2310,6 +2327,39 @@ def render(state, now, cmap, built):
         if where:
             per_country[where] += 1
             per_region[REGION_OF.get(where, "other")] += 1
+    # Around the world: the biggest story of each region (Africa, Asia-Pacific, Latin America, Europe,
+    # the Middle East) that the most-covered list leaves out, so the page is not the English-language
+    # press's view of the world. Same checks as most covered, but home coverage is allowed when outlets
+    # in 4+ countries carry it. Which regions get a line is settled after the final trim.
+    world_seen = Counter()
+    shown_now = {l["id"] for l in lines}
+    pool = [sid for sid, st in stories.items() if len(st["d"]) >= MIN_OUTLETS
+            and WORLD_REGION_OF.get(event_country(st) or "") and countries(st) >= WORLD_MIN_COUNTRIES]
+    for sid in sorted(pool, key=lambda x: -score(stories[x])[0]):
+        if sid not in stories or sid in shown_now:
+            continue
+        s = stories[sid]
+        where = event_country(s)
+        wr = WORLD_REGION_OF.get(where or "")
+        if not wr or world_seen[wr] >= 1 + SPARE_WORLD:
+            continue
+        mem = members(s)
+        if len(mem) < MIN_OUTLETS or countries(s) < WORLD_MIN_COUNTRIES or score(s)[0] < WORLD_MIN_SCORE:
+            continue
+        if is_crisis(s) or s["e"].get("T:celeb", 0) >= 0.2 * max(1, s["n"]) \
+                or s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]) or people_story(s):
+            continue
+        ents3 = set(top_ents(s)[:3])
+        if any(same_affair(s, ps, pe) or len(ents3 & set(top_ents(ps)[:4])) >= 2 for _, ps, pe in shown_stories):
+            continue                                  # a follow-up of a line already shown ("Seoul watches summit")
+        if headline_share(s, CEREMONY) >= 0.4:
+            continue                                  # anniversaries and ceremonies are not the region's news
+        line = make_line(sid, s, mem, "world", where)
+        if line is None:
+            continue
+        line["_region"] = wr
+        lines.append(line)
+        world_seen[wr] += 1
     # Ongoing crises: a war or disaster is covered every day, but in many small stories that never top
     # the day's list. Their coverage is added up by country over the last days; the biggest crises not
     # already on the page get a line with their largest story of the day.
@@ -2400,7 +2450,7 @@ def render(state, now, cmap, built):
                 line["covered_days"] = days_on
                 lines.append(line)
                 added += 1
-    lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2}[l["section"]])   # order within a section kept
+    lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2, "world": 3}[l["section"]])   # order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
     # Who attacked whom must match the headlines. A story whose headlines point both ways is two
     # events merged and is left off; a line pointing the other way from most headlines is dropped
@@ -2520,7 +2570,8 @@ def render(state, now, cmap, built):
         headline_share(stories[l["id"]], CRISIS_WORDS | VIOLENT_DEATH) >= 0.2 and
         (same_event(cs, stories[l["id"]]) or same_affair(stories[l["id"]], cs, ce) or same_scene(cs, stories[l["id"]]))
         for cs, ce in crisis_ev)]
-    cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES}
+    cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES, "world": WORLD_LINES}
+    world_regions = set()
     kept, per_country, per_region, shown_crises = [], Counter(), Counter(), set()
     tech_shown = us_shown = 0
     for l in lines:                         # spares fill only gaps; caps count lines actually shown
@@ -2528,13 +2579,29 @@ def render(state, now, cmap, built):
         region = REGION_OF.get(where or "", "other")
         if l["section"] == "ongoing" and where in shown_crises:
             continue                                  # one line per conflict
+        if l["section"] == "world":
+            wr = l.pop("_region", None)
+            # (a region with 2+ most-covered lines is covered; one line can be placed oddly: the
+            # Myanmar genocide ruling has the Gambia, which brought the case, as its country)
+            main = Counter(WORLD_REGION_OF.get(k.get("_where_kept") or "") for k in kept if k["section"] in ("day", "new"))
+            covered = {r for r, n in main.items() if n >= 2}
+            whl = [h["t"] for h in l.get("headlines", [])] + [l["sentence"]]
+            if sum(1 for t in whl if MARKET_MOVE.search(t)) > 0.5 * len(whl):
+                continue                              # a day's index move is not the region's news
+            if not cap["world"] or wr in covered or wr in world_regions or not l["sentence"] \
+                    or (where and per_country[where] >= PER_COUNTRY):
+                continue                              # one line per region the main list does not already fill
+            world_regions.add(wr)
+            cap["world"] -= 1
+            kept.append(l)
+            continue
         if l["section"] == "day" and sum(1 for h in l.get("headlines", []) if set(raw_words(h["t"])) & TECH) \
                 >= 0.5 * max(1, len(l.get("headlines", []))):
             if tech_shown >= TECH_LINES:
                 continue                              # at most 2 tech or company stories: room for the world
             tech_shown += 1
         hl = [h["t"] for h in l.get("headlines", [])] or [l["sentence"]]
-        if l["section"] in ("day", "new") and l["countries"] < MARKET_GLOBAL_COUNTRIES and \
+        if l["section"] in ("day", "new", "world") and l["countries"] < MARKET_GLOBAL_COUNTRIES and \
                 sum(1 for t in hl + [l["sentence"]] if MARKET_MOVE.search(t)) > 0.5 * (len(hl) + 1):
             continue                                  # a day's index move is not world news
         us = where == "US" or sum(1 for t in hl if set(raw_words(t)) & US_ACTORS) >= 0.5 * len(hl)
@@ -2552,6 +2619,7 @@ def render(state, now, cmap, built):
                 continue                              # at most 3 US-centred lines: a world page
             us_shown += 1
         cap[l["section"]] -= 1
+        l["_where_kept"] = where
         kept.append(l)
         if l["section"] == "ongoing":
             shown_crises.add(where)
@@ -2563,7 +2631,10 @@ def render(state, now, cmap, built):
     # the page still uses the full score).
     lines = [l for l in lines if l["section"] == "new"] + \
         sorted([l for l in lines if l["section"] == "day"], key=lambda l: -l["countries"]) + \
-        [l for l in lines if l["section"] == "ongoing"]
+        [l for l in lines if l["section"] == "ongoing"] + \
+        [l for l in lines if l["section"] == "world"]
+    for l in lines:
+        l.pop("_where_kept", None)
     return {
         "v": 4,
         "ai": ai,

@@ -1254,3 +1254,11 @@ class WorldBody(unittest.TestCase):
     def test_patterns(self):
         self.assertTrue(B.WORLD_BODY.search("international energy agency"))
         self.assertFalse(B.WORLD_BODY.search("sotheby"))
+
+
+class WorldRegions(unittest.TestCase):
+    def test_regions(self):
+        self.assertEqual(B.WORLD_REGION_OF["SG"], "africa")
+        self.assertEqual(B.WORLD_REGION_OF["BL"], "latin_america")
+        self.assertNotIn("US", B.WORLD_REGION_OF)
+        self.assertTrue(B.CEREMONY & set(B.raw_words("Pope celebrates Mass to mark 400th anniversary")))
