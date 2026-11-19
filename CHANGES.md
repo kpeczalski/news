@@ -304,3 +304,6 @@ After an independent grade of the live page (5 out of 10):
 ## 2026-11-18 (Helsinki), daily review
 - Crises: sanctions and threats are not violent events ("Australia sanctions Israeli settlers..." and "Iran threatens to strike..." left off); an injured count is only added to a line that tells the violent event or accident itself.
 - Foreign stories: a cluster now needs three shared names (two only for an article naming two); the translated "Trump, Putin and Xi meet in Shenzhen" repeated the English top line and had merged the Crimean bridge attack. Foreign lines whose translated headlines share 3 of the top 8 words with a big English story are left off. Clusters restart (fx_v 4).
+
+## 2026-11-19 (Helsinki), daily review
+- A forecast keeps its target year ("Muslims projected to outnumber Christians" -> "... by 2035") when 30%+ of headlines give one year.

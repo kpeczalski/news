@@ -31,3 +31,9 @@ readability 10.
 - Fixed: sanctions line in crises with a borrowed "10 injured" (sanctions and threats are not violent events; injured only on event lines).
 - Not changed: "Trump warns Iran over possible Washington attack" is Trump's own statement and already says "possible"; "police seek charges" is the more cautious of the two source wordings.
 - Limits: no Africa story with 10+ countries today.
+
+## 2026-11-19 19:00 (Helsinki), daily review (sonnet)
+- Accuracy 6, selection 5, readability 6.
+- Fixed: forecast without its year.
+- Not changed: "Dow taks..." typo is copied from one wire headline reprinted widely (no reliable typo check from headlines alone); the reviewer's US-actor cap and per-region crisis slot would change principles (worldwide by coverage, crises by lives) and need the owner; "· ·" was in the review dump, not on the page.
+- Limits: Sudan, DR Congo, Gaza had no event in 5+ countries today.

@@ -1303,6 +1303,16 @@ def stem(k):
 CLAUSE = r",\s+|\s(?:as|after|amid|while|and|but|following|if|unless|because|despite|until|drawing|prompting|sparking|raising|triggering|leaving|fuelling|fueling)\s"
 
 
+def forecast_year(sentence, titles):
+    """A forecast keeps its target year when 30%+ of the headlines give one and the line gives none."""
+    if re.search(r"\b20\d\d\b", sentence):
+        return sentence
+    years = Counter(m.group(0).lower() for t in titles for m in [re.search(r"\bby 20\d\d\b", t, re.I)] if m)
+    if len(years) == 1 and years.most_common(1)[0][1] >= 0.3 * len(titles):
+        return sentence.rstrip(".") + " " + years.most_common(1)[0][0]
+    return sentence
+
+
 def check_sentence(sentence, titles, must_negate, consensus_keys=(), claim=False, counted=None,
                    max_words=None, clauses=True, min_support=None, persons=()):
     """Rule-based gate on a model sentence. Returns "" if it passes, else the reason.
@@ -2359,6 +2369,10 @@ def render(state, now, cmap, built):
                 frame, n = frames.most_common(1)[0]
                 if len(frames) == 1:                  # one frame for that figure
                     l["sentence"] = l["sentence"].rstrip(".") + " " + frame
+        # A forecast keeps its year: "projected to outnumber Christians" -> "... by 2035" when 30%+ of
+        # the headlines give one target year and the line gives none.
+        if l["sentence"]:
+            l["sentence"] = forecast_year(l["sentence"], picks[l["id"]][0])
         # A named person's resignation, arrest or death is never in the model's words: a real headline
         # that passes the checks, or the line is left off.
         titles0, _, _, ckeys0, renowned0, persons0 = picks[l["id"]]

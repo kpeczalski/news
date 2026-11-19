@@ -1131,3 +1131,13 @@ class ForeignDuplicate(unittest.TestCase):
         self.assertGreaterEqual(len(fx & en), B.FX_SAME_WORDS)
         other = B.top_words(Counter({"sofia": 9, "mayor": 8, "terziev": 6, "budget": 4}))
         self.assertLess(len(other & en), B.FX_SAME_WORDS)
+
+
+class ForecastYear(unittest.TestCase):
+    def test_year_added(self):
+        t = ["Muslims are projected to outnumber Christians by 2035 as the world's largest religion",
+             "Islam is expected to surpass Christianity as the world's largest religion by 2035",
+             "Pew Research: Islam on track to become world's largest religion"]
+        self.assertEqual(B.forecast_year("Muslims projected to outnumber Christians", t),
+                         "Muslims projected to outnumber Christians by 2035")
+        self.assertEqual(B.forecast_year("Plan approved in 2026", t), "Plan approved in 2026")
