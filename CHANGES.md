@@ -319,3 +319,4 @@ After an independent grade of the live page (5 out of 10):
 - One event once: a most-covered story of the same conflict at the same places as a crisis line is left off.
 - A leader's statement about violence with no one harmed ("Trump says US will strike...") is a speech, not a crisis event.
 - Crisis rank: a toll counts only when a fifth of the event's headlines tell of people harmed (the Riyadh skyscraper line ranked first on "Saudi airstrikes kill 11" from 3 of 58 headlines).
+- A story led by the head of a world body (IEA's Birol on the World Energy Outlook) is not a "people" story.

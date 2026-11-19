@@ -123,6 +123,9 @@ NEW_MIN_SCORE = float(os.environ.get("NEW_MIN_SCORE", "6"))  # a new story needs
 TECH = set("""ai chip chips semiconductor semiconductors nvidia apple microsoft google alphabet meta amazon tesla
 spacex starship openai anthropic tiktok samsung intel tsmc software app smartphone iphone""".split())
 TECH_LINES = 2
+# world bodies: a story led by their head is about the body's work, not the person
+WORLD_BODY = re.compile(r"\b(international|world|united nations|global|agency|organization|organisation|"
+                        r"fund|bank|council|court|commission|union|nato|opec|who|imf|iaea|wto)\b")
 # US-centred lines (the US as event country, or most headlines about US actors): at most 3 of the
 # most-covered list, so English-language press weight does not make it a US page
 US_ACTORS = set("""us u.s american americans washington trump hegseth rubio vance pentagon congress senate
@@ -2071,6 +2074,8 @@ def render(state, now, cmap, built):
             return False
         if s["e"].get("T:office", 0) >= 0.3 * s["n"]:
             return False                              # GDELT tags it as public office
+        if any(n >= 0.3 * s["n"] and WORLD_BODY.search(e[2:]) for e, n in s["e"].items() if e.startswith("O:")):
+            return False                              # a world body's report ("IEA's Birol": World Energy Outlook)
         return headline_share(s, OFFICE | CRIME | LEADERS) < 0.25 and \
             headline_share(s, TECH | COMPANY | MARKET_WIDE) < 0.25
 

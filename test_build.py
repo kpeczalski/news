@@ -1248,3 +1248,9 @@ class EventToll(unittest.TestCase):
             ["Houthi media says Saudi airstrikes kill 11; coalition reports interception"] * 2
         self.assertEqual(B.event_toll(t), (0, 0))
         self.assertEqual(B.event_toll(["Pakistan military says it killed 22 militants in raids"] * 4)[0], 22)
+
+
+class WorldBody(unittest.TestCase):
+    def test_patterns(self):
+        self.assertTrue(B.WORLD_BODY.search("international energy agency"))
+        self.assertFalse(B.WORLD_BODY.search("sotheby"))

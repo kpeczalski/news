@@ -42,3 +42,8 @@ readability 10.
 - Accuracy 6, selection 5, readability 7 (Dow line gone; US cap held).
 - Then: deadly crisis events (10+ killed) need 3 countries, not 5.
 - Not changed: Houthi line states the damage as most headlines do (principle 6); Anthropic quote headline is the only one passing the number check (figures differ: $81bn, $83/share, $1.5tn).
+
+## 2026-11-19 20:00 (Helsinki), multi-agent round (selection opus, readability sonnet, grade sonnet)
+- Accuracy 8, selection 6, readability 8 (from 6/5/7 at 19:30).
+- Changes: crises reach more conflicts (Pakistan, Gaza added; up to 6), rank by spread, one event once, strict lives first with toll from a fifth of headlines, US cap 3, no index moves, no cut inside name lists, quote-led headlines after plain, larger tap targets, world-body reports not "people" stories.
+- Declined: a Middle East cap in crises (lives first decides; the region has most active conflicts today); "Saudi says" on the Houthi line (most headlines state it as fact, principle 6).
