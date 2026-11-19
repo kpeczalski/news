@@ -58,3 +58,6 @@ readability 10.
 - Opus grades run about one point above sonnet.
 - Changes tonight: proofread and rewrite of model lines, around the world for every region (no repeats, no company/tech, no conflict knock-ons), crisis attribution at a quarter, neutral possessives on contested land, no-harm events need 10 countries, people affected before damage, cleaner sources (no outlet names, factboxes, commentary), one outlet per country under a line.
 - Remaining points are mostly LIMITs on a thin weekday evening: 4 most-covered lines, no Sudan/DR Congo/Sahel event in 3+ countries, one-sided tolls.
+
+## 2026-11-19 21:00 (Helsinki), good-news page, first review (sonnet + opus)
+- Accuracy 6.5 / 7.0, selection 4.0 / 4.0, readability 8.0 / 8.0. Weak lines filled a thin page (state-media PR, a viral video, a religion projection, a demand statistic). Fixed by stricter gates; the page now prefers few lines.

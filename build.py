@@ -67,7 +67,7 @@ GOOD_POS_SHARE = 0.5                          # (unless half read positive)
 GOOD_NEG_SHARE = 0.4                          # a story whose articles mostly read negative is not good news
 GOOD_MIN_SCORE = 0                            # good news is rarer: a smaller story can lead
 GOOD_MIN_OUTLETS = 10                         # ... or 10+ outlets in one country
-GOOD_MIN_COUNTRIES = 3                        # most covered good news: outlets in 5+ countries
+GOOD_MIN_COUNTRIES = 5                        # most covered good news: outlets in 5+ countries
 BAD_WORDS = set("""killed kills kill dead dies died death deaths wounded injured attack attacks strike strikes
 war bomb bombing shooting crash crashed collapse fire blaze flood floods earthquake missing murder murdered
 arrested charged convicted sentenced jailed accused abuse fraud scandal sanctions threat threatens warns
@@ -94,6 +94,16 @@ SCIENCE_OUTLETS = set("""sciencealert.com newscientist.com nature.com livescienc
 mongabay.com news-medical.net sciencenews.org scientificamerican.com popsci.com universetoday.com futurity.org
 phys.org sciencedaily.com eurekalert.org scitechdaily.com earth.com smithsonianmag.com nationalgeographic.com
 positive.news goodnewsnetwork.org reasonstobecheerful.world optimistdaily.com newatlas.com""".split())
+# a discovery must tell an advance, not a statistic, a projection or a loss
+ADVANCE_WORDS = set("""discover discovers discovered discovery first reveal reveals revealed finds found breakthrough
+record reaches reached milestone detected spotted unearthed identified develop develops developed invented
+approved cure cures treats restores restored rediscovered saved launches launched lands landed captures
+images photographs maps decoded""".split())
+NOT_DISCOVERY = set("""population muslim muslims christian christians hindu hindus religion religious survey poll
+demand projects projected projection extinct extinction""".split())
+STATE_MEDIA = set("""xinhuanet.com news.cn english.news.cn chinadaily.com.cn globaltimes.cn cgtn.com ecns.cn
+china.org.cn people.cn en.people.cn rt.com tass.com tass.ru sputnikglobe.com presstv.ir irna.ir kcna.kp
+tehrantimes.com""".split())
 SCIENCE_LINES = 4                             # "// discoveries": research advances
 SCIENCE_MIN_COUNTRIES = 2
 ONGOING_LINES = 6                             # crises: one line per conflict with a violent event today
@@ -324,7 +334,7 @@ QUALIFIER = set("alleged allegedly reportedly suspected purported purportedly un
 NEGATION = {"not", "never"}
 # Attention-seeking words. Never printed, never used for matching, and a model sentence
 # containing one is rejected.
-FLASH = set("""shocking shock shocks stunning stuns stunned bombshell explosive slams slammed blasts blasted
+FLASH = set("""impressive awe inspiring amazing incredible stunning breathtaking jaw dropping heartwarming shocking shock shocks stunning stuns stunned bombshell explosive slams slammed blasts blasted
 rips ripped destroys destroyed epic insane unbelievable incredible amazing horrific horrifying terrifying
 devastating heartbreaking tragic chaos fury furious outrage outraged meltdown nightmare jaw-dropping
 exclusive urgent revealed finally massive huge emotional beloved dramatic iconic heartfelt historic
@@ -2303,12 +2313,18 @@ def render(state, now, cmap, built):
             return False
         if headline_share(s, LIGHT_WORDS) >= 0.15 or s["e"].get("T:celeb", 0) >= 0.1 * n:
             return False                              # shows, stars and lifestyle are not the world's good news
+        if sum(1 for d in s["d"] if d in STATE_MEDIA) >= 0.5 * len(s["d"]):
+            return False                              # a state's own press praising it is not independent news
+        if not event_country(s):
+            return False                              # a good story says where it happened
         return headline_share(s, GOOD_WORDS) >= 0.3
 
     def science(s):
         """A research advance: most headlines tell a study, a discovery or a mission; not bad news."""
         toned, pos, neg = tone_shares(s)
         return headline_share(s, SCIENCE_WORDS) >= 0.4 and headline_share(s, BAD_WORDS) < 0.2 \
+            and headline_share(s, ADVANCE_WORDS) >= 0.3 and headline_share(s, NOT_DISCOVERY) < 0.2 \
+            and sum(1 for d in s["d"] if d in STATE_MEDIA) < 0.5 * len(s["d"]) \
             and headline_share(s, LIGHT_WORDS | OFFICE) < 0.2 \
             and (toned < 3 or neg <= 0.6) and headline_share(s, COMPANY | DEAL_WORDS | MARKET_WORDS) < 0.3
 
@@ -2895,8 +2911,7 @@ def render(state, now, cmap, built):
         if l["section"] == "day" and not GOOD_ONLY and l["score"] < DAY_MIN_SCORE and \
                 sum(1 for k in kept if k["section"] == "day") >= DAY_FILL_LINES:
             continue                                  # smaller stories only fill a thin page (nights, weekends)
-        if l["section"] in ("day", "new") and l["countries"] < (GOOD_MIN_COUNTRIES if GOOD_ONLY else DAY_MIN_COUNTRIES) \
-                and not (GOOD_ONLY and l["outlets"] >= GOOD_MIN_OUTLETS):
+        if l["section"] in ("day", "new") and l["countries"] < (GOOD_MIN_COUNTRIES if GOOD_ONLY else DAY_MIN_COUNTRIES):
             continue                                  # world news: carried in many countries, not one or two
         if not cap[l["section"]] or (l["section"] != "science" and (
                 (where and per_country[where] >= PER_COUNTRY)
@@ -2936,7 +2951,7 @@ def render(state, now, cmap, built):
         "history_hours": min(24, round((now - min([int(k) for k in state["arts"]] or [now]) + 1) / 4)),
         "ongoing_days": n_days,
         "screened": {"outlets": len(state["dom"]), "articles": sum(state["arts"].values())},
-        "note": NOTE,
+        "note": NOTE or ("// a quiet hour for good news" if GOOD_ONLY and len(lines) < 4 else ""),
         "lines": lines,
     }
 
