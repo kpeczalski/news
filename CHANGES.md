@@ -310,3 +310,4 @@ After an independent grade of the live page (5 out of 10):
 - World page: at most 3 US-centred most-covered lines (US as event country, or most headlines about US actors); a day's stock-index move ("Dow takes major hit") is left off unless 40+ countries carry it; a headline led by a quote ranks after one that states the news; question headlines go last among sources. Owner gave carte blanche (19 Nov).
 - Crises: an event with 10+ killed needs 3 countries instead of 5 (lives first; conflicts in Africa and Asia get fewer foreign outlets).
 - Headline cut: never inside a list of names ("Trump says summit with Xi, Putin ..." was cut to "Trump says summit with Xi"); the quote rule is judged on the printed headline, so cutting a quote off no longer wins.
+- Phone: larger tap targets for sources and copy link (about 41px), opened sources 16px, narrower empty gutter; the counter stays small (owner asked) but at full opacity.
