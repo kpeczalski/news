@@ -1268,3 +1268,8 @@ class NoHarmCrisis(unittest.TestCase):
     def test_threshold(self):
         self.assertEqual(B.CRISIS_NO_HARM_COUNTRIES, 10)
         self.assertEqual(B.event_toll(["Drone strike hits Kerch bridge"] * 5), (0, 0))
+
+
+class GrammarJudge(unittest.TestCase):
+    def test_no_model_no_judgement(self):
+        self.assertEqual(B.grammar_ok([]), {})

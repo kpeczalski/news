@@ -1945,6 +1945,33 @@ def translate_titles(titles):
     return dict(zip(titles, lines_out))
 
 
+def grammar_ok(sentences):
+    """The hosted model as a proofreader: is each line one complete, grammatical English sentence a
+    news editor would print? A word list that passed the word checks ("IEA says Iran war crisis
+    reshapes global oil energy no return") is refused. {} (no judgement) if the model is down."""
+    model = pick_model()
+    if not model or not model.startswith("api:") or not sentences:
+        return {}
+    prompt = ("You are a strict copy editor. For each line, answer YES if it is one complete, grammatical "
+              "English sentence that reads naturally as a news headline, or NO if it is ungrammatical, "
+              "garbled, a word list, or cut off. Answer with one YES or NO per line, same order, nothing else.")
+    try:
+        payload = {"model": model[4:], "temperature": 0, "max_tokens": 200,
+                   "messages": [{"role": "system", "content": prompt},
+                                {"role": "user", "content": "\n".join(sentences)}]}
+        if "gpt-oss" in model:
+            payload.update({"reasoning_effort": "low", "include_reasoning": False})
+        out = api("/chat/completions", timeout=30, payload=payload)
+        text = ((out.get("choices") or [{}])[0].get("message") or {}).get("content", "")
+    except Exception as e:
+        log("grammar check failed:", repr(e)[:200])
+        return {}
+    ans = [a.strip(" -*.\t").upper() for a in text.strip().splitlines() if a.strip()]
+    if len(ans) != len(sentences):
+        return {}
+    return {t: a.startswith("Y") for t, a in zip(sentences, ans)}
+
+
 FX_SAME_WORDS = 3                                # a foreign story sharing this many top words is an English one
 
 
@@ -2582,6 +2609,13 @@ def render(state, now, cmap, built):
         headline_share(stories[l["id"]], CRISIS_WORDS | VIOLENT_DEATH) >= 0.2 and
         (same_event(cs, stories[l["id"]]) or same_affair(stories[l["id"]], cs, ce) or same_scene(cs, stories[l["id"]]))
         for cs, ce in crisis_ev)]
+    # Model-written lines get a proofread: a line that is not a natural sentence is left off.
+    judged = grammar_ok([l["sentence"] for l in lines if l.get("by") == "model" and l["sentence"]])
+    for l in lines:
+        if l.get("by") == "model" and judged.get(l["sentence"]) is False:
+            DIAG.setdefault("skipped", []).append({"why": "not a sentence", "score": l["score"], "line": l["sentence"]})
+            l["dropped"] = True
+    lines = [l for l in lines if not l.pop("dropped", False)]
     cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES, "world": WORLD_LINES}
     world_regions = set()
     kept, per_country, per_region, shown_crises = [], Counter(), Counter(), set()
