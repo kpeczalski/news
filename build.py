@@ -109,6 +109,7 @@ EN HR SI BK MK AL MJ RI AJ AM GG CY MT""".split(),
 }
 WORLD_REGION_OF = {c: r for r, cs in WORLD_REGIONS.items() for c in cs}
 WORLD_LINES = 5
+FOLLOW_UP = set("inquiry inquest investigators finds findings anniversary retrial".split())
 CYBER = set("flaw flaws vulnerability hackers patch patching java software bug".split())
 DEAL_WORDS = set("bank banks takeover stake merger acquisition acquire bid deal unicredit".split())
 CLAIM_ECHO_COUNTRIES = 10                    # a claim carried in this many countries was picked up abroad
@@ -1666,6 +1667,12 @@ TIMEFRAME = re.compile(r"\b(this year|so far|since \w+|in \d+ (?:months|weeks|da
 RECENT_TITLES = {}                            # story id -> its headlines from the last 6 hours
 
 
+# a possessive that gives contested land to one side ("Russia's Kerch Bridge"): such a headline is not used
+CONTESTED = re.compile(r"\b(Russia|Ukraine|Israel|China|Morocco|India|Pakistan)'s\s+(Kerch|Crimea\w*|Sevastopol|"
+                       r"Donbas|Donetsk|Luhansk|Zaporizhzhia|Kherson|West Bank|Golan|East Jerusalem|"
+                       r"Western Sahara|Taiwan|Kashmir)", re.I)
+
+
 def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=None, must_negate=False,
                     persons=(), event=False, recent=None):
     """Fallback when no model sentence passes: a real headline that is short and plain and passes
@@ -1691,6 +1698,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     for title, n in Counter(titles).items():
         if n < 2 and title not in renowned and n_wordings < 6:
             continue                                  # in a big story every word is checked against many
+        if CONTESTED.search(title):
+            continue                                  # neutral: no side's possessive on contested land
         words0 = title.split()
         # Sentence case: a capitalised word that other headlines print in lower case is lowered
         # (Title Case, or a stray capital as in "Russia Claims drone Attack"); names stay.
@@ -2444,6 +2453,8 @@ def render(state, now, cmap, built):
             continue                                  # a follow-up of a line already shown ("Seoul watches summit")
         if headline_share(s, COMPANY | DEAL_WORDS | TECH | CYBER) >= 0.3 and headline_share(s, OFFICE) < 0.3:
             continue                                  # a company's affairs are not the region's news
+        if headline_share(s, FOLLOW_UP) >= 0.4:
+            continue                                  # an inquiry's report on an old event is not the region's news
         if headline_share(s, CEREMONY) >= 0.4:
             continue                                  # anniversaries and ceremonies are not the region's news
         wt = [t[0] for t in s["ti"].values()]

@@ -1283,3 +1283,9 @@ class StripOutlet(unittest.TestCase):
                                         "grenadachronicle.com"), "Mosque set on fire in Israel")
         self.assertEqual(B.strip_outlet("Ukraine - Russia talks resume in Geneva", "bbc.com"),
                          "Ukraine - Russia talks resume in Geneva")
+
+
+class Contested(unittest.TestCase):
+    def test_possessive(self):
+        self.assertTrue(B.CONTESTED.search("A third Ukrainian strike halts rail traffic on Russia's Kerch Bridge"))
+        self.assertFalse(B.CONTESTED.search("Crimea bridge strike another blow to Russia"))
