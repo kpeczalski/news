@@ -94,12 +94,15 @@
     }
     if (l.context) s.appendChild(el("span", "ctx", l.context));
     var m = el("span", "m");
-    m.appendChild(document.createTextNode((l.countries || 1) + (l.countries === 1 ? " country" : " countries") + " · "));
-    var nh = l.new_hour || 0;          // pace: quiet, steady, rising, surging
-    var rate = el("span", "rate " + (nh >= 30 ? "r3" : nh >= 10 ? "r2" : nh >= 3 ? "r1" : "r0"),
-                  "+" + nh.toLocaleString() + " outlets/h");
-    rate.title = "outlets that joined in the last hour";
-    m.appendChild(rate);
+    m.appendChild(document.createTextNode((l.countries || 1) + (l.countries === 1 ? " country" : " countries")));
+    var nh = l.new_hour || 0;          // pace: quiet, steady, rising, surging; none shown when no outlet joined
+    if (nh > 0) {
+      m.appendChild(document.createTextNode(" · "));
+      var rate = el("span", "rate " + (nh >= 30 ? "r3" : nh >= 10 ? "r2" : nh >= 3 ? "r1" : "r0"),
+                    "+" + nh.toLocaleString() + " outlets/h");
+      rate.title = "outlets that joined in the last hour";
+      m.appendChild(rate);
+    }
     (l.show_tags || l.tags || []).forEach(function (t) {
       if (TAGS[t]) { m.appendChild(document.createTextNode(" · ")); m.appendChild(el("span", "tag", TAGS[t])); }
     });

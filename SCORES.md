@@ -47,3 +47,8 @@ readability 10.
 - Accuracy 8, selection 6, readability 8 (from 6/5/7 at 19:30).
 - Changes: crises reach more conflicts (Pakistan, Gaza added; up to 6), rank by spread, one event once, strict lives first with toll from a fifth of headlines, US cap 3, no index moves, no cut inside name lists, quote-led headlines after plain, larger tap targets, world-body reports not "people" stories.
 - Declined: a Middle East cap in crises (lives first decides; the region has most active conflicts today); "Saudi says" on the Houthi line (most headlines state it as fact, principle 6).
+
+## 2026-11-19 21:00 (Helsinki), sections rethought (owner carte blanche)
+- Grades by round: 8/6/8 -> 7/6/8 (new section) -> 6/6/8 -> 8/6.5/8.5.
+- Added: "// around the world" (one line per region not filled by most covered), US cap 2, crisis attribution kept at a quarter, deadly events at 3 countries and no-harm events at 10, lives first after backups, clearer opened line, no "+0 outlets/h".
+- Limits named by reviewers: Sudan, DR Congo, Sahel rarely reach 3+ countries in headlines; thin weekday evenings.

@@ -1212,9 +1212,9 @@ class Selection(unittest.TestCase):
         # An older event with people killed comes before a fresh one with no one harmed reported.
         ua = "4#Kerch, Crimea, Ukraine#UP#UP11#1#1#1"
         ye = "4#Marib, Yemen#YM#YM00#1#1#1"
-        harmed = [art("y%d.com" % i, "Airstrike kills 5 in Marib market, report %d" % i, ye) for i in range(6)]
-        fresh = [art("k%d.com" % i, "Drone strike hits Kerch bridge, report %d" % i, ua) for i in range(6)]
-        cmap = {"%s%d.com" % (c, i): "C%d" % i for c in "yk" for i in range(6)}
+        harmed = [art("y%d.com" % i, "Airstrike kills 5 in Marib market, report %d" % i, ye) for i in range(10)]
+        fresh = [art("k%d.com" % i, "Drone strike hits Kerch bridge, report %d" % i, ua) for i in range(10)]
+        cmap = {"%s%d.com" % (c, i): "C%d" % i for c in "yk" for i in range(10)}
         _, p = run([(100, harmed, []), (150, fresh, [])], cmap=cmap)
         self.assertEqual(len(self.ongoing(p)), 2)
         self.assertIn("5", self.ongoing(p)[0])
@@ -1262,3 +1262,9 @@ class WorldRegions(unittest.TestCase):
         self.assertEqual(B.WORLD_REGION_OF["BL"], "latin_america")
         self.assertNotIn("US", B.WORLD_REGION_OF)
         self.assertTrue(B.CEREMONY & set(B.raw_words("Pope celebrates Mass to mark 400th anniversary")))
+
+
+class NoHarmCrisis(unittest.TestCase):
+    def test_threshold(self):
+        self.assertEqual(B.CRISIS_NO_HARM_COUNTRIES, 10)
+        self.assertEqual(B.event_toll(["Drone strike hits Kerch bridge"] * 5), (0, 0))

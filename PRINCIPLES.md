@@ -15,7 +15,7 @@
 5. Crisis order: lives first, then recency and reliability; never press coverage. Toll (killed,
    injured/4) on a log scale; any person harmed outweighs an event with no harm to people reported (deaths outweigh
    damage to things); recency halves after 6 h; a toll only one side claims counts half; two papers
-   of record add 20%. Within a conflict, the deadliest event of the day is its line. A crisis event needs 5+ countries, or 3+ when 10 or more were killed (lives first; Africa and Asia get fewer foreign outlets).
+   of record add 20%. Within a conflict, the deadliest event of the day is its line. A crisis event needs 5+ countries, or 3+ when 10 or more were killed, or 10+ when no one is reported harmed (lives first; Africa and Asia get fewer foreign outlets).
 6. A crisis line says who did what (checked against the headlines; mixed-direction stories are left off) ("Ukrainian strikes kill 9 in Russia"), not who says it,
    when three quarters of headlines state the event as fact; otherwise the line keeps who says it. Never invert who attacked whom.
 7. Sources when a line is opened: the event country's papers of record first (not for

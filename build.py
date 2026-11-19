@@ -81,6 +81,7 @@ ONGOING_DAYS = 7
 ONGOING_STORIES = 4                           # separate crisis stories about one country in a day
 CRISIS_DEADLY = 10                            # a crisis event with this many killed ...
 CRISIS_DEADLY_COUNTRIES = 3                   # ... needs only this many countries
+CRISIS_NO_HARM_COUNTRIES = 10                 # an event with no one reported harmed needs this many
 ONGOING_MIN = 30                              # outlets over those days, all of a crisis's stories together
 PRE_BY_OUTLETS = 150                          # stories ranked: the largest by outlets...
 PRE_BY_COUNTRIES = 100                        # ...plus those carried in the most countries
@@ -2410,8 +2411,11 @@ def render(state, now, cmap, built):
         # by fewer foreign outlets, and lives come first)
         def wide_enough(it):
             need = max(5, 0.25 * widest)
-            if event_toll([t[0] for t in stories[it[1]]["ti"].values()])[0] >= CRISIS_DEADLY:
+            tl = event_toll([t[0] for t in stories[it[1]]["ti"].values()])
+            if tl[0] >= CRISIS_DEADLY:
                 need = min(need, CRISIS_DEADLY_COUNTRIES)
+            elif tl == (0, 0):
+                need = max(need, CRISIS_NO_HARM_COUNTRIES)   # no one reported harmed: only what is widely told
             return countries(stories[it[1]]) >= need
         # Coverage weight (4+) is not asked of a deadly event (10+ killed): its own country's press carries
         # it, which the score discounts as domestic, and lives come first.
