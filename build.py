@@ -1187,6 +1187,11 @@ STATE_PRESS = set("CH RS IR KN SA BM VM CU ER TX BO SY AE QA LA EG".split())
 LOCAL_BIG = 0.75                              # a local outlet counts as major in the top quarter by size
 
 
+# commentary, explainers and roundups are not shown as a line's sources ("Factbox-Houthi attacks on ...")
+NOT_A_SOURCE = re.compile(r"^(factbox|explainer|analysis|opinion|comment|editorial|live|what we know|"
+                          r"timeline)\b|\?|\bwar briefing\b|\bbriefing:", re.I)
+
+
 def strip_outlet(title, dom):
     """A headline without the outlet's own name stuck to it ("Bangkok Post - ...", "... - Grenada
     Chronicle – Daily Grenada And Caribbean News"): the part naming the outlet is cut."""
@@ -1227,7 +1232,7 @@ def sources(s, consensus_keys, local=None, cmap=None):
     rows.sort()
     heads, links, link_countries = [], [], set()
     for _, _, _, _, dom, title, url, slug, keys in rows:
-        if len(heads) < HEADLINES and not slug and keys not in seen_wording:
+        if len(heads) < HEADLINES and not slug and keys not in seen_wording and not NOT_A_SOURCE.search(title):
             seen_wording.add(keys)
             w = wire_of(url)
             heads.append({"t": strip_outlet(title, dom), "d": (w[0] + " via " + dom) if w else dom, "u": url})
