@@ -345,3 +345,6 @@ After an independent grade of the live page (5 out of 10):
 - Around the world: no story about a conflict already on the page (IndiGo flights to Saudi cities beside the Houthi line).
 - Crises: among events with no one hurt, people fleeing or missing come before damage to things.
 - Source lists leave out factboxes, explainers, briefings, opinion and question headlines.
+
+## 2026-11-19 (Helsinki), good news only (owner)
+- The page now shows only positive or inspiring stories and research advances: "// good news", "// discoveries", "// around the world". GDELT tone of each article is read (T:pos, T:neg); the last 24 hours are re-read once for tone. Crises and the old selection stay in the code behind GOOD_ONLY=0.

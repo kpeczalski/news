@@ -58,6 +58,31 @@ NOT_EVENT = set("""calls urges accuses condemns slams warns vows presses tells v
 sentences sentenced sentencing court trial verdict convicted jailed charged funeral mourns sanctions
 sanction sanctioned imposes condemn condemned threatens threaten threatened threat threats""".split())
 CRISIS_SECTION = True
+# Good news only (owner, 19 Nov): the page shows positive or inspiring stories and research advances,
+# chosen by GDELT's tone of the articles and by the headlines' own words; no crises section.
+GOOD_ONLY = os.environ.get("GOOD_ONLY", "1") == "1"
+TONE_POS = 1.0                                # article tone at or above this is positive
+TONE_NEG = -1.5                               # ... at or below this, negative
+GOOD_POS_SHARE = 0.5                          # a good story: half its toned articles positive ...
+GOOD_NEG_SHARE = 0.25                         # ... and at most a quarter negative
+GOOD_MIN_SCORE = 3                            # good news is rarer: a smaller story can lead
+GOOD_MIN_COUNTRIES = 5                        # most covered good news: outlets in 5+ countries
+BAD_WORDS = set("""killed kills kill dead dies died death deaths wounded injured attack attacks strike strikes
+war bomb bombing shooting crash crashed collapse fire blaze flood floods earthquake missing murder murdered
+arrested charged convicted sentenced jailed accused abuse fraud scandal sanctions threat threatens warns
+crisis disaster tragedy victims hostage hostages kidnapped raid raids protest protests riot riots clashes
+recession layoffs cuts outbreak virus disease cancer toxic pollution drought famine refugees migrants""".split())
+GOOD_WORDS = set("""breakthrough cure cured discover discovered discovery first record saves saved rescue rescued
+rescues peace ceasefire treaty restored reopens reopened returns recovers recovery wins win won award
+awarded prize honoured honored celebrates approves approved launches launched opens unveils vaccine treatment
+therapy protects protected conservation endangered rebounds hope milestone success successful
+reunited donates donation volunteers free clean renewable solar planted""".split())
+SCIENCE_WORDS = set("""study researchers scientists research discovered discovery breakthrough telescope astronomers
+fossil fossils species trial vaccine treatment therapy gene genes dna cells physicists quantum archaeologists
+ancient spacecraft mission probe planet galaxy comet asteroid mars moon nasa esa cern experiment engineers
+battery fusion medicine drug drugs university journal published nature""".split())
+SCIENCE_LINES = 4                             # "// discoveries": research advances
+SCIENCE_MIN_COUNTRIES = 3
 ONGOING_LINES = 6                             # crises: one line per conflict with a violent event today
 VIOLENT_DEATH = set("killed kills kill wounded injured casualties massacre".split())   # not "dies"
 # Known armed conflicts (from the list of ongoing wars with 1,000+ deaths a year; check it now and
@@ -110,6 +135,7 @@ EN HR SI BK MK AL MJ RI AJ AM GG CY MT""".split(),
 WORLD_REGION_OF = {c: r for r, cs in WORLD_REGIONS.items() for c in cs}
 WORLD_LINES = 5
 FOLLOW_UP = set("inquiry inquest investigators finds findings anniversary retrial".split())
+MARKET_WORDS = set("stocks shares markets ipo investors valuation earnings profit revenue dow nasdaq".split())
 CYBER = set("flaw flaws vulnerability hackers patch patching java software bug".split())
 DEAL_WORDS = set("bank banks takeover stake merger acquisition acquire bid deal unicredit".split())
 CLAIM_ECHO_COUNTRIES = 10                    # a claim carried in this many countries was picked up abroad
@@ -582,6 +608,15 @@ def entities(f):
         ents.add("T:death")                           # GDELT counted people killed or wounded
     if CELEB_THEME.search(f[7] or "") or CELEB_THEME.search(f[8] or ""):
         ents.add("T:celeb")                           # ... or about actors, singers, celebrities
+    try:                                              # GDELT's tone of the article text (V2Tone)
+        tone = float((f[15] or "").split(",")[0])
+        ents.add("T:toned")
+        if tone >= TONE_POS:
+            ents.add("T:pos")
+        elif tone <= TONE_NEG:
+            ents.add("T:neg")
+    except (ValueError, IndexError):
+        pass
     for p in f[11].split(";")[:15]:
         if p.strip():
             ents.add("P:" + alias(p.strip().lower()))
@@ -676,6 +711,37 @@ def backfill(state, latest, rules, started):
     state["backfill_next"] = nxt
     if done:
         log("backfill: read", done, "past files, now at", stamp(nxt))
+
+
+TONE_FILES = 24                               # past files re-read per run for their tone, once
+
+
+def tone_backfill(state, latest, rules, started):
+    """Once, after the good-news switch: the last 24 hours of files are read again only for the tone of
+    their articles, added to the stories those articles already belong to (matched by address)."""
+    if state.get("tone_v") == 1:
+        return
+    nxt = state.setdefault("tone_next", latest - RANK_WINDOW)
+    by_url = {}
+    for sid, st in state["stories"].items():
+        for v in st["ti"].values():
+            by_url[v[1]] = sid
+    done = 0
+    stats = {"rows": 0, "titled": 0}
+    while nxt <= latest and done < TONE_FILES and time.time() - started < BUDGET / 2:
+        for a in read_gkg(nxt, False, rules, stats):
+            sid = by_url.get(a["url"])
+            if sid and not state["stories"][sid]["e"].get("T:toned_b"):
+                e = state["stories"][sid]["e"]
+                for t in ("T:toned", "T:pos", "T:neg"):
+                    if t in a["ents"]:
+                        e[t] = e.get(t, 0) + 1
+        nxt += 1
+        done += 1
+    state["tone_next"] = nxt
+    if nxt > latest:
+        state["tone_v"] = 1
+    log("tone backfill: read", done, "files")
 
 
 def load_countries():
@@ -2201,6 +2267,32 @@ def render(state, now, cmap, built):
         return headline_share(s, OFFICE | CRIME | LEADERS) < 0.25 and \
             headline_share(s, TECH | COMPANY | MARKET_WIDE) < 0.25
 
+    def tone_shares(s):
+        toned = s["e"].get("T:toned", 0)
+        return toned, s["e"].get("T:pos", 0) / max(1, toned), s["e"].get("T:neg", 0) / max(1, toned)
+
+    def good(s):
+        """Good news: the articles read positive (GDELT tone), the headlines tell of no harm, and they
+        say something good happened ("rescued", "breakthrough", "peace") or tell a research advance.
+        Money and company affairs are not good news here."""
+        toned, pos, neg = tone_shares(s)
+        if toned < 3 or pos < GOOD_POS_SHARE or neg > GOOD_NEG_SHARE:
+            return False
+        n = max(1, s["n"])
+        if s["e"].get("T:crisis", 0) >= 0.3 * n or s["e"].get("T:death", 0) >= 0.1 * n:
+            return False
+        if headline_share(s, BAD_WORDS) >= 0.15:
+            return False
+        if headline_share(s, COMPANY | DEAL_WORDS | MARKET_WORDS) >= 0.3:
+            return False
+        return headline_share(s, GOOD_WORDS | SCIENCE_WORDS) >= 0.25
+
+    def science(s):
+        """A research advance: most headlines tell a study, a discovery or a mission; not bad news."""
+        toned, pos, neg = tone_shares(s)
+        return headline_share(s, SCIENCE_WORDS) >= 0.4 and headline_share(s, BAD_WORDS) < 0.2 \
+            and (toned < 3 or neg <= 0.4) and headline_share(s, COMPANY | DEAL_WORDS | MARKET_WORDS) < 0.3
+
     def conflict_of(s):
         """The armed conflict a story belongs to: where it happened, or a conflict country most of its
         reports name ("US downs Iranian drones over Bahrain" belongs to the Iran war). None otherwise."""
@@ -2215,7 +2307,7 @@ def render(state, now, cmap, built):
         """A violent event in an armed conflict, or a disaster or attack the world covers (20+
         countries), by the story's own headlines: these go to the crises section. Speeches, talks
         and accidents are not crisis events; they stay in the main list."""
-        return CRISIS_SECTION and headline_share(s, CRISIS_WORDS | VIOLENT_DEATH) >= 0.4 \
+        return CRISIS_SECTION and not GOOD_ONLY and headline_share(s, CRISIS_WORDS | VIOLENT_DEATH) >= 0.4 \
             and headline_share(s, NOT_EVENT) < 0.4 \
             and (headline_share(s, ACCIDENT_WORDS) < 0.3 or countries(s) >= BIG_DISASTER_COUNTRIES) \
             and (conflict_of(s) is not None or countries(s) >= BIG_DISASTER_COUNTRIES) \
@@ -2390,7 +2482,7 @@ def render(state, now, cmap, built):
         if len(mem) < MIN_OUTLETS:
             continue
         section = "new" if s["first"] > now - NEW_AGE else "day"
-        if score(s)[0] < (NEW_MIN_SCORE if section == "new" else DAY_FILL_SCORE):
+        if score(s)[0] < (GOOD_MIN_SCORE if GOOD_ONLY else NEW_MIN_SCORE if section == "new" else DAY_FILL_SCORE):
             skip(s, "small"); continue  # too small to list
         if not worldwide_enough(s):
             skip(s, "not worldwide"); continue
@@ -2400,6 +2492,8 @@ def render(state, now, cmap, built):
             skip(s, "celebrity"); continue
         if s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]):
             skip(s, "sport"); continue  # sport, by GDELT's topic tags
+        if GOOD_ONLY and not good(s):
+            skip(s, "not good news"); continue
         if cmap and domestic(s) and len(s["f"]) < DOMESTIC_KEEP and s["n"] < DOMESTIC_EXCEPTIONAL:
             skip(s, "domestic"); continue  # domestic news, unless the world's press carries it
         where = event_country(s)
@@ -2453,6 +2547,8 @@ def render(state, now, cmap, built):
         if len(mem) < MIN_OUTLETS or countries(s) < WORLD_MIN_BY_REGION.get(wr, WORLD_MIN_COUNTRIES) \
                 or score(s)[0] < WORLD_MIN_SCORE:
             continue
+        if GOOD_ONLY and not good(s):
+            continue
         if is_crisis(s) or s["e"].get("T:celeb", 0) >= 0.2 * max(1, s["n"]) \
                 or s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]) or people_story(s):
             continue
@@ -2475,6 +2571,23 @@ def render(state, now, cmap, built):
         line["_region"] = wr
         lines.append(line)
         world_seen[wr] += 1
+    # Discoveries (good-news page): research advances, the most widely carried first.
+    if GOOD_ONLY:
+        shown_now = {l["id"] for l in lines}
+        sci = [sid for sid, st in stories.items() if sid not in shown_now and len(st["d"]) >= MIN_OUTLETS
+               and countries(st) >= SCIENCE_MIN_COUNTRIES and science(st)]
+        made_sci = 0
+        for sid in sorted(sci, key=lambda x: -score(stories[x])[0]):
+            st = stories[sid]
+            if made_sci >= SCIENCE_LINES + SPARE_LINES or people_story(st) \
+                    or st["e"].get("T:celeb", 0) >= 0.2 * max(1, st["n"]) \
+                    or any(same_affair(st, ps, pe) for _, ps, pe in shown_stories):
+                continue
+            line = make_line(sid, st, members(st), "science", event_country(st))
+            if line:
+                lines.append(line)
+                shown_stories.append((line, st, set(top_ents(st)[:3])))
+                made_sci += 1
     # Ongoing crises: a war or disaster is covered every day, but in many small stories that never top
     # the day's list. Their coverage is added up by country over the last days; the biggest crises not
     # already on the page get a line with their largest story of the day.
@@ -2568,7 +2681,7 @@ def render(state, now, cmap, built):
                 line["covered_days"] = days_on
                 lines.append(line)
                 added += 1
-    lines.sort(key=lambda l: {"new": 0, "day": 1, "ongoing": 2, "world": 3}[l["section"]])   # order within a section kept
+    lines.sort(key=lambda l: {"new": 0, "day": 1, "science": 2, "ongoing": 3, "world": 4}[l["section"]])   # order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
     # Who attacked whom must match the headlines. A story whose headlines point both ways is two
     # events merged and is left off; a line pointing the other way from most headlines is dropped
@@ -2702,7 +2815,8 @@ def render(state, now, cmap, built):
             else:
                 l["dropped"] = True
     lines = [l for l in lines if not l.pop("dropped", False)]
-    cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES, "world": WORLD_LINES}
+    cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES, "world": WORLD_LINES,
+           "science": SCIENCE_LINES}
     world_regions = set()
     kept, per_country, per_region, shown_crises = [], Counter(), Counter(), set()
     tech_shown = us_shown = 0
@@ -2745,10 +2859,10 @@ def render(state, now, cmap, built):
                 sum(1 for t in hl + [l["sentence"]] if MARKET_MOVE.search(t)) > 0.5 * (len(hl) + 1):
             continue                                  # a day's index move is not world news
         us = where == "US" or sum(1 for t in hl if set(raw_words(t)) & US_ACTORS) >= 0.5 * len(hl)
-        if l["section"] == "day" and l["score"] < DAY_MIN_SCORE and \
+        if l["section"] == "day" and not GOOD_ONLY and l["score"] < DAY_MIN_SCORE and \
                 sum(1 for k in kept if k["section"] == "day") >= DAY_FILL_LINES:
             continue                                  # smaller stories only fill a thin page (nights, weekends)
-        if l["section"] in ("day", "new") and l["countries"] < DAY_MIN_COUNTRIES:
+        if l["section"] in ("day", "new") and l["countries"] < (GOOD_MIN_COUNTRIES if GOOD_ONLY else DAY_MIN_COUNTRIES):
             continue                                  # world news: carried in many countries, not one or two
         if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
                 or (region != "other" and per_region[region] >= PER_REGION):
@@ -2771,6 +2885,7 @@ def render(state, now, cmap, built):
     # the page still uses the full score).
     lines = [l for l in lines if l["section"] == "new"] + \
         sorted([l for l in lines if l["section"] == "day"], key=lambda l: -l["countries"]) + \
+        [l for l in lines if l["section"] == "science"] + \
         sorted([l for l in lines if l["section"] == "ongoing"],          # lives first, also after a backup;
                key=lambda l: (event_toll([t[0] for t in stories[l["id"]]["ti"].values()]) == (0, 0),
                               not set(raw_words(l["sentence"])) & PEOPLE_AFFECTED)) + \
@@ -2891,6 +3006,8 @@ def main():
 
     if os.environ.get("BACKFILL", "1") == "1":
         backfill(state, latest, rules, started)
+        if GOOD_ONLY:
+            tone_backfill(state, state["last"], rules, started)
 
     # Canary: if GDELT changes its format, stop before publishing nonsense.
     if stats["rows"] > 500 and stats["titled"] < 0.3 * stats["rows"]:

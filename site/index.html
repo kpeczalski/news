@@ -198,7 +198,7 @@
     code.textContent = "";
     var found = false, section = null;
     var hours = data.history_hours || 24;
-    var SECTIONS = { "new": "// new in the last 3 hours", "day": "// most covered", "ongoing": "// crises", "world": "// around the world" };
+    var SECTIONS = { "new": "// new in the last 3 hours", "day": "// good news", "science": "// discoveries", "ongoing": "// crises", "world": "// around the world" };
     var legend = "";
     (data.lines || []).forEach(function (l) {
       if (r && r.story === l.id) found = true;
@@ -213,7 +213,7 @@
     });
     if (!(data.lines || []).length) {
       var none = el("li", "note");
-      none.appendChild(el("span", "c", "// no story has reached enough outlets yet"));
+      none.appendChild(el("span", "c", "// no good news has reached enough outlets yet"));
       code.appendChild(none);
     }
     if (r && r.story && !found) {

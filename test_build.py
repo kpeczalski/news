@@ -3,6 +3,7 @@ import gzip, json, os, pathlib, shutil, tempfile, unittest, zipfile
 import build as B
 
 os.environ["BACKFILL"] = "0"
+B.GOOD_ONLY = False
 B.CRISIS_SECTION = False          # most test stories are disasters; the crises section has its own test
 B.AI = "off"                       # tests never call a model; the writer is tested with a stub
 B.NEW_MIN_SCORE = 0                # most tests use tiny stories; the threshold has its own test
@@ -14,9 +15,11 @@ B.AI_TRIES = 4                     # tests do not depend on the deployment's set
 B.COUNTED_MIN_SCORE = 0
 
 
-def art(domain, title, loc="", persons="", translated=False):
+def art(domain, title, loc="", persons="", translated=False, tone=None):
     f = [""] * 27
     f[9], f[11] = loc, persons
+    if tone is not None:
+        f[15] = "%s,1,1,1,1,1,100" % tone
     return {"domain": domain, "url": "https://%s/x" % domain, "title": title, "slug": False,
             "ents": B.entities(f), "toks": [] if translated else B.tokenise(title)}
 
@@ -1289,3 +1292,35 @@ class Contested(unittest.TestCase):
     def test_possessive(self):
         self.assertTrue(B.CONTESTED.search("A third Ukrainian strike halts rail traffic on Russia's Kerch Bridge"))
         self.assertFalse(B.CONTESTED.search("Crimea bridge strike another blow to Russia"))
+
+
+class GoodNews(unittest.TestCase):
+    def setUp(self):
+        self._saved = (B.GOOD_ONLY, B.MIN_OUTLETS)
+        B.GOOD_ONLY, B.MIN_OUTLETS = True, 3
+
+    def tearDown(self):
+        B.GOOD_ONLY, B.MIN_OUTLETS = self._saved
+
+    def test_tone_is_read(self):
+        self.assertIn("T:pos", art("a.com", "x", tone=3.2)["ents"])
+        self.assertIn("T:neg", art("a.com", "x", tone=-4)["ents"])
+
+    def test_positive_story_listed_and_bad_news_left_off(self):
+        loc = "4#Nairobi, Kenya#KE#KE05#1#1#1"
+        good = [art("g%d.com" % i, "Rangers return 40 rescued elephants to restored park, report %d" % i, loc, tone=3)
+                for i in range(8)]
+        bad = [art("b%d.com" % i, "Bus crash kills 12 near Nairobi, police say, report %d" % i, loc, tone=-6)
+               for i in range(8)]
+        cmap = {"%s%d.com" % (c, i): "C%d" % i for c in "gb" for i in range(8)}
+        _, p = run([(100, good + bad, [])], cmap=cmap)
+        text = " ".join(l["sentence"] or l["key"] + " " + l["text"] for l in p["lines"])
+        self.assertIn("elephants", text.lower())
+        self.assertNotIn("crash", text.lower())
+
+    def test_research_advance_in_discoveries(self):
+        loc = "4#Geneva, Switzerland#SZ#SZ00#1#1#1"
+        sci = [art("s%d.com" % i, "Scientists discover new species of deep sea fish in study, report %d" % i, loc, tone=0.5)
+               for i in range(6)]
+        _, p = run([(100, sci, [])], cmap={"s%d.com" % i: "C%d" % i for i in range(6)})
+        self.assertIn("science", [l["section"] for l in p["lines"]])
