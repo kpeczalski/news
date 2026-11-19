@@ -2613,8 +2613,9 @@ def render(state, now, cmap, built):
                     l["sentence"] = base + ": " + inj + ", no deaths"   # 2+ headlines say so, none reports one
                 else:
                     l["sentence"] = base + ", " + inj
-            elif accident and not TOLL_RE.search(digits(l["sentence"])) and sum(
+            elif is_event and not TOLL_RE.search(digits(l["sentence"])) and toll(titles0) == (0, 0) and sum(
                     1 for t in titles0 if NO_HARM.search(t)) >= 2:
+                # (an attack too: "Drone hits Riyadh tower, no injuries reported", when 2+ headlines say so)
                 l["sentence"] = l["sentence"].rstrip(".") + ", no injuries reported"
         sides = SIDES.get(l.get("_where"))
         if l["section"] != "ongoing" or not sides or not l["sentence"]:

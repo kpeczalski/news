@@ -333,3 +333,4 @@ After an independent grade of the live page (5 out of 10):
 - A refused model line gets one rewrite from the headlines; it is shown only if it passes every check and the proofread.
 - Around the world: a line for every region not already on the page (2+ countries for Africa and Latin America), up to 4 candidates per region, US actors and index moves filtered before choosing.
 - "Also reported by": one outlet per country.
+- Crisis lines (not only accidents) add "no injuries reported" when 2+ headlines say so and none gives a toll.
