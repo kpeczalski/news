@@ -1240,3 +1240,11 @@ class Selection(unittest.TestCase):
         _, p = run([(100, arts, [])], cmap={"t%d.com" % i: "C%d" % i for i in range(6)})
         self.assertEqual(self.ongoing(p), [])
         self.assertNotIn("crises section", [k["why"] for k in B.DIAG["skipped"]])
+
+
+class EventToll(unittest.TestCase):
+    def test_minor_toll_not_the_event(self):
+        t = ["Houthi missile fired towards Riyadh damages skyscraper"] * 20 + \
+            ["Houthi media says Saudi airstrikes kill 11; coalition reports interception"] * 2
+        self.assertEqual(B.event_toll(t), (0, 0))
+        self.assertEqual(B.event_toll(["Pakistan military says it killed 22 militants in raids"] * 4)[0], 22)

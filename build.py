@@ -1512,6 +1512,16 @@ NO_DEATH = re.compile(r"\bno (deaths?|fatalities|one (was )?killed)\b|\bwithout 
                       r"\ball\b.{0,60}\bsurviv", re.I)
 
 
+def event_toll(titles):
+    """The toll that ranks a crisis event: only when a fifth or more of its headlines tell of people
+    harmed ("Houthi missile damages skyscraper" does not take "Saudi airstrikes kill 11" from 3 of 58)."""
+    harmed = sum(1 for t in titles if TOLL_RE.search(digits(t)) or set(raw_words(t)) & VIOLENT_DEATH)
+    return toll(titles) if harmed >= EVENT_TOLL_SHARE * max(1, len(titles)) else (0, 0)
+
+
+EVENT_TOLL_SHARE = 0.2
+
+
 def toll(titles):
     """(killed, injured) as most headlines that give a number state it: the median of each
     headline's figure, the lower end of a range. (0, 0) when no headline gives one."""
@@ -2330,7 +2340,7 @@ def render(state, now, cmap, built):
         # the same conflict here, never one conflict with another).
         def rank(item):
             # people killed or injured first (deaths outweigh damage to things), then the widest reported
-            k, h = toll([t[0] for t in stories[item[1]]["ti"].values()])
+            k, h = event_toll([t[0] for t in stories[item[1]]["ti"].values()])
             return k + h / 4, countries(stories[item[1]]), item[0]
         # Only events reported about as widely as the conflict's main event: a cumulative figure in a few
         # outlets ("245 children killed since ...") is not the day's event.
@@ -2339,13 +2349,13 @@ def render(state, now, cmap, built):
         # by fewer foreign outlets, and lives come first)
         def wide_enough(it):
             need = max(5, 0.25 * widest)
-            if toll([t[0] for t in stories[it[1]]["ti"].values()])[0] >= CRISIS_DEADLY:
+            if event_toll([t[0] for t in stories[it[1]]["ti"].values()])[0] >= CRISIS_DEADLY:
                 need = min(need, CRISIS_DEADLY_COUNTRIES)
             return countries(stories[it[1]]) >= need
         # Coverage weight (4+) is not asked of a deadly event (10+ killed): its own country's press carries
         # it, which the score discounts as domestic, and lives come first.
         def big_enough(it):
-            return it[0] >= 4 or toll([t[0] for t in stories[it[1]]["ti"].values()])[0] >= CRISIS_DEADLY
+            return it[0] >= 4 or event_toll([t[0] for t in stories[it[1]]["ti"].values()])[0] >= CRISIS_DEADLY
         ranked_items = sorted((it for it in items if big_enough(it) and wide_enough(it)), key=rank, reverse=True)
         best, sid, _ = ranked_items[0] if ranked_items else (0, None, 0)
         backups = [it[1] for it in ranked_items[1:3]]
@@ -2359,7 +2369,7 @@ def render(state, now, cmap, built):
         st = stories[sid]
         latest = max(v[1] for v in members(st).values())
         recency = 1 / (1 + (now - latest) / 24)
-        k, h = toll([t[0] for t in st["ti"].values()])
+        k, h = event_toll([t[0] for t in st["ti"].values()])
         # No toll reported yet (often the case for a large attack still unfolding) is not "no one hurt":
         # it weighs like a mid-sized toll rather than nothing.
         # Lives first: any person killed or injured weighs above harm to things (an unreported toll).
