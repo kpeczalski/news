@@ -339,6 +339,6 @@ After an independent grade of the live page (5 out of 10):
 - Around the world: no tech or software stories (a Java flaw is not Europe's news).
 - Naval mines, seizures and hijackings are crisis events (Hormuz tankers).
 - Around the world: ordered by countries; Europe needs 6 countries.
-- No headline with a possessive giving contested land to one side ("Russia's Kerch Bridge").
+- A possessive giving contested land to one side is replaced ("Russia's Kerch Bridge" -> "the Kerch Bridge").
 - Around the world: no inquiry reports on old events.
 - Counter: "+0 outlets/h" shown again, faint, so every line looks the same; opened line: tighter outlet list, larger sparkline.

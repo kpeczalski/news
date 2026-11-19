@@ -1695,11 +1695,12 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
     n_wordings = len({tuple(k for _, k, _ in scan(t)) for t in titles})
     res_share = sum(1 for t in titles if set(raw_words(t)) & RESOLVE) / max(1, len(titles))
     frame_share = sum(1 for t in titles if TIMEFRAME.search(t)) / max(1, len(titles))
-    for title, n in Counter(titles).items():
-        if n < 2 and title not in renowned and n_wordings < 6:
+    for orig, n in Counter(titles).items():
+        if n < 2 and orig not in renowned and n_wordings < 6:
             continue                                  # in a big story every word is checked against many
-        if CONTESTED.search(title):
-            continue                                  # neutral: no side's possessive on contested land
+        # neutral: no side's possessive on contested land ("Russia's Kerch Bridge" -> "the Kerch Bridge")
+        title = CONTESTED.sub(lambda m: "the " + m.group(2), orig)
+        title = title[:1].upper() + title[1:]
         words0 = title.split()
         # Sentence case: a capitalised word that other headlines print in lower case is lowered
         # (Title Case, or a stray capital as in "Russia Claims drone Attack"); names stay.
@@ -1750,14 +1751,14 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             # the scale when outlets give it ("nationwide", "all flights"): it is the news
             scale = bool(rw & {"nationwide", "all", "every", "global", "worldwide", "entire", "countrywide"})
             # the latest development first ("FAA lifts ground stop" over the morning's "FAA issues ground stop")
-            fresh = recent is None or title in recent
+            fresh = recent is None or orig in recent
             resolved = bool(rw & RESOLVE) if res_share >= 0.15 else False   # the outcome, once outlets report it
             # a total over time keeps its time frame ("1,630 civilians ... this year"), or it reads as one event
             framed = bool(TIMEFRAME.search(text)) if frame_share >= 0.2 else False
             # a headline led by a quote ("... for 'benefit of humankind'") comes after one that states the news
             # (judged on the printed headline: cutting the quote off is no way to win, "Trump says summit with Xi")
             unquoted = not re.search(r"(^|\s)['‘\"“]\w", title)
-            ranked.append(((not accuses, framed, resolved, fresh, plain, told, unquoted, scale, fits, specific, not amid, enough, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
+            ranked.append(((not accuses, framed, resolved, fresh, plain, told, unquoted, scale, fits, specific, not amid, enough, -renowned.get(orig, 999), title_sc == title, n, -len(words)), text, orig))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.
     # Every word of a real headline must be common in the story: in two differently worded headlines,
