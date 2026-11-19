@@ -713,7 +713,7 @@ def backfill(state, latest, rules, started):
         log("backfill: read", done, "past files, now at", stamp(nxt))
 
 
-TONE_FILES = 24                               # past files re-read per run for their tone, once
+TONE_FILES = 96                               # past files re-read per run for their tone, once
 
 
 def tone_backfill(state, latest, rules, started):
