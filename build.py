@@ -1572,6 +1572,8 @@ def event_toll(titles):
 
 
 EVENT_TOLL_SHARE = 0.2
+# then people driven out or missing before damage to things ("Dozens flee Israeli tanks" over "skyscraper damaged")
+PEOPLE_AFFECTED = set("flee fled fleeing displaced evacuate evacuated evacuation missing trapped hostages abducted".split())
 # a crisis line drops who says it only when three quarters of headlines state the event as fact
 # (a quarter attributing it to one side, "Saudi-led coalition says", keeps the source on the line)
 EVENT_FACT_SHARE = 0.75
@@ -2717,6 +2719,10 @@ def render(state, now, cmap, built):
             on_page = {k.get("_where_kept") for k in kept} - {None}
             if where and (where in on_page or CONFLICT.get(where) in on_page):
                 continue                              # a country (or its conflict) already on the page
+            st_w = stories.get(l["id"], {"e": {}, "n": 1})
+            named = {e[2:] for e, c in st_w["e"].items() if e.startswith("K:") and c >= 0.3 * max(1, st_w["n"])}
+            if any(CONFLICT.get(c) in on_page for c in named):
+                continue                              # about a conflict already on the page (flights to Saudi cities)
             if not cap["world"] or wr in covered or wr in world_regions or not l["sentence"] \
                     or (where and per_country[where] >= PER_COUNTRY):
                 continue                              # one line per region the main list does not already fill
@@ -2760,8 +2766,9 @@ def render(state, now, cmap, built):
     # the page still uses the full score).
     lines = [l for l in lines if l["section"] == "new"] + \
         sorted([l for l in lines if l["section"] == "day"], key=lambda l: -l["countries"]) + \
-        sorted([l for l in lines if l["section"] == "ongoing"],          # lives first, also after a backup
-               key=lambda l: event_toll([t[0] for t in stories[l["id"]]["ti"].values()]) == (0, 0)) + \
+        sorted([l for l in lines if l["section"] == "ongoing"],          # lives first, also after a backup;
+               key=lambda l: (event_toll([t[0] for t in stories[l["id"]]["ti"].values()]) == (0, 0),
+                              not set(raw_words(l["sentence"])) & PEOPLE_AFFECTED)) + \
         sorted([l for l in lines if l["section"] == "world"], key=lambda l: -l["countries"])
     for l in lines:
         l.pop("_where_kept", None)

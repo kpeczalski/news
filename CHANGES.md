@@ -342,3 +342,5 @@ After an independent grade of the live page (5 out of 10):
 - A possessive giving contested land to one side is replaced ("Russia's Kerch Bridge" -> "the Kerch Bridge").
 - Around the world: no inquiry reports on old events.
 - Counter: "+0 outlets/h" shown again, faint, so every line looks the same; opened line: tighter outlet list, larger sparkline.
+- Around the world: no story about a conflict already on the page (IndiGo flights to Saudi cities beside the Houthi line).
+- Crises: among events with no one hurt, people fleeing or missing come before damage to things.
