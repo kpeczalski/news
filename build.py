@@ -1637,6 +1637,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
         if cut and set(raw_words(title_sc[cut.end():])) & {"says", "said", "say", "saying", "according",
                                                            "claims", "claim", "reportedly", "report", "reports"}:
             cut = None                                # never cut off who says the main clause
+        if cut and re.match(r"[A-Z]", title_sc[cut.end():]) and re.search(r"\b[A-Z][\w'-]*$", title_sc[:cut.start()]):
+            cut = None                                # a list of names ("with Xi, Putin ...") is not an add-on
         if cut and event and TOLL_RE.search(digits(title_sc[cut.start():])):
             cut = None                                # nor, on a crisis line, the toll ("..., injures 28")
         # (an allegation in the add-on itself, "... amid alleged affair", may be cut off whole)
@@ -1678,7 +1680,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
             # a total over time keeps its time frame ("1,630 civilians ... this year"), or it reads as one event
             framed = bool(TIMEFRAME.search(text)) if frame_share >= 0.2 else False
             # a headline led by a quote ("... for 'benefit of humankind'") comes after one that states the news
-            unquoted = not re.search(r"(^|\s)['‘\"“]\w", text)
+            # (judged on the printed headline: cutting the quote off is no way to win, "Trump says summit with Xi")
+            unquoted = not re.search(r"(^|\s)['‘\"“]\w", title)
             ranked.append(((not accuses, framed, resolved, fresh, plain, told, unquoted, scale, fits, specific, not amid, enough, -renowned.get(title, 999), title_sc == title, n, -len(words)), text, title))
     # In a story with many wordings every word needs a second headline behind it (this drops
     # colour such as "his second home"); a story with few wordings has too little to compare.

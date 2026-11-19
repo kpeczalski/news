@@ -1149,3 +1149,10 @@ class MarketMove(unittest.TestCase):
         self.assertTrue(B.MARKET_MOVE.search("Asian stocks slide as oil jumps"))
         self.assertFalse(B.MARKET_MOVE.search("Anthropic IPO raises record $81 billion"))
         self.assertFalse(B.MARKET_MOVE.search("Myanmar committed genocide against Rohingya minority"))
+
+
+class NameListCut(unittest.TestCase):
+    def test_no_cut_inside_name_list(self):
+        t = ["Trump says summit with Xi, Putin 'making history'"] * 3
+        got = B.common_headline(t, ["trump", "summit", "xi", "putin"], counted="trump summit xi putin")
+        self.assertNotEqual(got, "Trump says summit with Xi")
