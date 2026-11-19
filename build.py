@@ -1972,6 +1972,30 @@ def grammar_ok(sentences):
     return {t: a.startswith("Y") for t, a in zip(sentences, ans)}
 
 
+def rewrite_line(bad, titles):
+    """One more try after the proofread refuses a line: the hosted model rewrites it as one plain,
+    grammatical sentence from the headlines' own words. "" if down or unusable."""
+    model = pick_model()
+    if not model or not model.startswith("api:"):
+        return ""
+    prompt = ("Rewrite the draft as ONE short, complete, grammatical English news sentence (subject, verb, "
+              "object; at most 12 words) that states what most of the headlines say. Use only words and "
+              "numbers found in the headlines; keep who says it. Answer with the sentence only.")
+    try:
+        payload = {"model": model[4:], "temperature": 0, "max_tokens": 80,
+                   "messages": [{"role": "system", "content": prompt},
+                                {"role": "user", "content": "Headlines:\n" + "\n".join(titles[:12]) +
+                                 "\n\nDraft: " + bad}]}
+        if "gpt-oss" in model:
+            payload.update({"reasoning_effort": "low", "include_reasoning": False})
+        out = api("/chat/completions", timeout=30, payload=payload)
+        text = ((out.get("choices") or [{}])[0].get("message") or {}).get("content", "")
+    except Exception as e:
+        log("rewrite failed:", repr(e)[:200])
+        return ""
+    return text.strip().strip('"').splitlines()[0].strip() if text.strip() else ""
+
+
 FX_SAME_WORDS = 3                                # a foreign story sharing this many top words is an English one
 
 
@@ -2614,7 +2638,13 @@ def render(state, now, cmap, built):
     for l in lines:
         if l.get("by") == "model" and judged.get(l["sentence"]) is False:
             DIAG.setdefault("skipped", []).append({"why": "not a sentence", "score": l["score"], "line": l["sentence"]})
-            l["dropped"] = True
+            titles, shown_t, _, ckeys, _, persons = picks[l["id"]]
+            again = digits(rewrite_line(l["sentence"], shown_t or titles))
+            if again and not check_sentence(again, titles, False, ckeys, "claim" in l["tags"], l["text"],
+                                            persons=persons) and grammar_ok([again]).get(again):
+                l["sentence"] = again                 # the rewrite passes every check and the proofread
+            else:
+                l["dropped"] = True
     lines = [l for l in lines if not l.pop("dropped", False)]
     cap = {"new": NEW_LINES, "day": DAY_LINES, "ongoing": ONGOING_LINES, "world": WORLD_LINES}
     world_regions = set()
