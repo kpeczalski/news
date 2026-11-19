@@ -65,7 +65,8 @@ TONE_POS = 1.0                                # article tone at or above this is
 TONE_NEG = -1.5                               # ... at or below this, negative
 GOOD_POS_SHARE = 0.5                          # (unless half read positive)
 GOOD_NEG_SHARE = 0.4                          # a story whose articles mostly read negative is not good news
-GOOD_MIN_SCORE = 1                            # good news is rarer: a smaller story can lead
+GOOD_MIN_SCORE = 0                            # good news is rarer: a smaller story can lead
+GOOD_MIN_OUTLETS = 10                         # ... or 10+ outlets in one country
 GOOD_MIN_COUNTRIES = 3                        # most covered good news: outlets in 5+ countries
 BAD_WORDS = set("""killed kills kill dead dies died death deaths wounded injured attack attacks strike strikes
 war bomb bombing shooting crash crashed collapse fire blaze flood floods earthquake missing murder murdered
@@ -2556,7 +2557,7 @@ def render(state, now, cmap, built):
             continue
         mem = members(s)
         if len(mem) < MIN_OUTLETS or countries(s) < WORLD_MIN_BY_REGION.get(wr, WORLD_MIN_COUNTRIES) \
-                or score(s)[0] < WORLD_MIN_SCORE:
+                or score(s)[0] < (0 if GOOD_ONLY else WORLD_MIN_SCORE):
             continue
         if GOOD_ONLY and not good(s):
             continue
@@ -2873,7 +2874,8 @@ def render(state, now, cmap, built):
         if l["section"] == "day" and not GOOD_ONLY and l["score"] < DAY_MIN_SCORE and \
                 sum(1 for k in kept if k["section"] == "day") >= DAY_FILL_LINES:
             continue                                  # smaller stories only fill a thin page (nights, weekends)
-        if l["section"] in ("day", "new") and l["countries"] < (GOOD_MIN_COUNTRIES if GOOD_ONLY else DAY_MIN_COUNTRIES):
+        if l["section"] in ("day", "new") and l["countries"] < (GOOD_MIN_COUNTRIES if GOOD_ONLY else DAY_MIN_COUNTRIES) \
+                and not (GOOD_ONLY and l["outlets"] >= GOOD_MIN_OUTLETS):
             continue                                  # world news: carried in many countries, not one or two
         if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
                 or (region != "other" and per_region[region] >= PER_REGION):
