@@ -5,7 +5,7 @@
    tone: half or more positive, at most a quarter negative), its headlines tell of no harm, and they say
    something good happened (a rescue, a cure, a peace deal, a record, a return) or tell a research advance.
    Money, markets and company affairs are not good news here. Sections: `// good news` (5+ countries),
-   `// discoveries` (research, 3+ countries), `// around the world` (one good story per region).
+   `// discoveries` (research, 2+ countries, or one science outlet's own report), `// around the world` (one good story per region).
    The crises rules below (4-6) are kept in the code, switched off (GOOD_ONLY=0 turns the old page back on).
 
 1. Just facts. Lines are what outlets report: no background, no context lines, no labels,

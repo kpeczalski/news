@@ -85,7 +85,15 @@ christmas thanksgiving holiday recipe recipes tips review hotel fashion style ha
 royal dating actress actor show shows game games netflix disney""".split())
 SCIENCE_WORDS = set("""study studies researchers scientists discovered discovery breakthrough telescope
 astronomers fossil fossils species vaccine therapy gene genes dna physicists quantum archaeologists
-archaeological spacecraft planet galaxy comet asteroid nasa esa cern experiment fusion""".split())
+archaeological spacecraft planet planets galaxy galaxies comet asteroid nasa esa cern experiment fusion voyager
+probe orbit astronauts rover moon mars jupiter saturn solar eclipse dinosaur dinosaurs ancestors extinct
+evolution ocean coral wildlife biologists ecologists""".split())
+# outlets that report research and good news as their beat: one of them carrying a story is enough
+# for "discoveries" even when few others do (GDELT reads few science outlets)
+SCIENCE_OUTLETS = set("""sciencealert.com newscientist.com nature.com livescience.com space.com theconversation.com
+mongabay.com news-medical.net sciencenews.org scientificamerican.com popsci.com universetoday.com futurity.org
+phys.org sciencedaily.com eurekalert.org scitechdaily.com earth.com smithsonianmag.com nationalgeographic.com
+positive.news goodnewsnetwork.org reasonstobecheerful.world optimistdaily.com newatlas.com""".split())
 SCIENCE_LINES = 4                             # "// discoveries": research advances
 SCIENCE_MIN_COUNTRIES = 2
 ONGOING_LINES = 6                             # crises: one line per conflict with a violent event today
@@ -1741,7 +1749,7 @@ def digits(text):
 
 RESOLVE = {"lifts", "lifted", "lift", "resume", "resumes", "resumed", "reopens", "reopened", "restored",
            "restores", "ends", "ended", "released", "freed", "rescued", "contained", "extinguished"}
-TIMEFRAME = re.compile(r"\b(this year|so far|since \w+|in \d+ (?:months|weeks|days|years)|over the past \w+|"
+TIMEFRAME = re.compile(r"\b(this year|so far(?=\s*(?:$|[,.;:)]|this|in 20))|since \w+|in \d+ (?:months|weeks|days|years)|over the past \w+|"
                        r"last year|this month|in 20\d\d|a year|per year|each year)\b", re.I)
 RECENT_TITLES = {}                            # story id -> its headlines from the last 6 hours
 
@@ -2258,7 +2266,9 @@ def render(state, now, cmap, built):
 
     def headline_share(s, words):
         titles = [t[0] for t in s["ti"].values()]
-        return sum(1 for t in titles if set(raw_words(t)) & words) / max(1, len(titles))
+        # ("NASA's" counts as "nasa")
+        return sum(1 for t in titles if {w[:-2] if w.endswith("'s") else w for w in raw_words(t)} & words) \
+            / max(1, len(titles))
 
     def people_story(s):
         """A story about a famous person that is neither public office, business with impact, nor crime
@@ -2586,12 +2596,13 @@ def render(state, now, cmap, built):
     # Discoveries (good-news page): research advances, the most widely carried first.
     if GOOD_ONLY:
         shown_now = {l["id"] for l in lines}
-        sci = [sid for sid, st in stories.items() if sid not in shown_now and len(st["d"]) >= MIN_OUTLETS
-               and countries(st) >= SCIENCE_MIN_COUNTRIES and science(st)]
+        sci = [sid for sid, st in stories.items() if sid not in shown_now and science(st) and (
+               (len(st["d"]) >= MIN_OUTLETS and countries(st) >= SCIENCE_MIN_COUNTRIES)
+               or SCIENCE_OUTLETS & set(st["d"]))]
         made_sci = 0
-        for sid in sorted(sci, key=lambda x: -score(stories[x])[0]):
+        for sid in sorted(sci, key=lambda x: (-len(stories[x]["d"]), -score(stories[x])[0])):
             st = stories[sid]
-            if made_sci >= SCIENCE_LINES + SPARE_LINES \
+            if made_sci >= SCIENCE_LINES + 8 \
                     or st["e"].get("T:celeb", 0) >= 0.2 * max(1, st["n"]) \
                     or any(same_affair(st, ps, pe) for _, ps, pe in shown_stories):
                 continue
@@ -2695,6 +2706,16 @@ def render(state, now, cmap, built):
                 added += 1
     lines.sort(key=lambda l: {"new": 0, "day": 1, "science": 2, "ongoing": 3, "world": 4}[l["section"]])   # order within a section kept
     ai = add_sentences(state, lines, picks, time.time())
+    # A discovery reported by one or two science outlets: their own headline, as printed (nothing to
+    # compare it with; a question, a sale or a headline over 16 words is not used).
+    for l in lines:
+        if l["section"] == "science" and not l["sentence"] and l["outlets"] <= 2 and l.get("headlines"):
+            plain = [h for h in picks[l["id"]][0] if not re.match(r"^[^:]{1,30}:\s", h)
+                     and any(len(w) > 3 and w.islower() for w in h.split())]   # no "The Medical Minute:", no Title Case
+            t = plain[0] if plain else ""
+            if t and len(t.split()) <= 16 and "?" not in t and not set(raw_words(t)) & (FLASH | BAD_WORDS | MARKET_WORDS) \
+                    and not re.search(r"\$|\boff\b|\bdeal\b|\bsale\b", t, re.I):
+                l["sentence"], l["by"] = t, "headline"
     # Who attacked whom must match the headlines. A story whose headlines point both ways is two
     # events merged and is left off; a line pointing the other way from most headlines is dropped
     # (the conflict's next event takes its place).
@@ -2877,8 +2898,9 @@ def render(state, now, cmap, built):
         if l["section"] in ("day", "new") and l["countries"] < (GOOD_MIN_COUNTRIES if GOOD_ONLY else DAY_MIN_COUNTRIES) \
                 and not (GOOD_ONLY and l["outlets"] >= GOOD_MIN_OUTLETS):
             continue                                  # world news: carried in many countries, not one or two
-        if not cap[l["section"]] or (where and per_country[where] >= PER_COUNTRY) \
-                or (region != "other" and per_region[region] >= PER_REGION):
+        if not cap[l["section"]] or (l["section"] != "science" and (
+                (where and per_country[where] >= PER_COUNTRY)
+                or (region != "other" and per_region[region] >= PER_REGION))):
             continue
         if l["section"] == "day" and us:
             if us_shown >= US_LINES:
