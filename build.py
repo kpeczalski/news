@@ -108,6 +108,7 @@ EN HR SI BK MK AL MJ RI AJ AM GG CY MT""".split(),
 }
 WORLD_REGION_OF = {c: r for r, cs in WORLD_REGIONS.items() for c in cs}
 WORLD_LINES = 5
+CLAIM_ECHO_COUNTRIES = 10                    # a claim carried in this many countries was picked up abroad
 CEREMONY = set("anniversary anniversaries celebrates celebrate celebrated celebration commemorates commemoration ceremony mass festival".split())
 WORLD_MIN_COUNTRIES = 3                       # picked up abroad, not only at home
 WORLD_MIN_SCORE = 3
@@ -2232,15 +2233,16 @@ def render(state, now, cmap, built):
     room = {"new": NEW_LINES + SPARE_LINES, "day": DAY_LINES + SPARE_LINES}
     per_country, per_region = Counter(), Counter()
     def skip(s, why):
-        if len(DIAG.setdefault("skipped", [])) < 40:
+        if len(DIAG.setdefault("skipped", [])) < 120:
             DIAG["skipped"].append({"why": why, "score": round(score(s)[0], 1), "n": len(s["d"]),
                                     "where": event_country(s), "names": top_ents(s)[:3]})
     def make_line(sid, s, mem, section, where):
         key, text, tags, ckeys = consensus(s, now)
         if not key:
             return None
-        if cmap and "claim" in tags and not s["f"] and section != "ongoing":
+        if cmap and "claim" in tags and not s["f"] and section != "ongoing" and countries(s) < CLAIM_ECHO_COUNTRIES:
             return None                                  # a remark nobody abroad picked up is not an event
+            # (one carried in 10+ countries is picked up abroad, even if only in English: "IEA says")
             # (a crisis event is not a remark: a toll one side claims is kept, at half weight)
         heads, links = sources(s, ckeys, where, cmap)
         all_titles = [t[0] for t in s["ti"].values() if not t[3]]

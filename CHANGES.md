@@ -328,3 +328,4 @@ After an independent grade of the live page (5 out of 10):
 - Crises shown lives first also when a backup line replaces a conflict's first pick.
 - Crises: an event with no one reported harmed needs 10+ countries (lives first).
 - Counter: "+0 outlets/h" is no longer shown.
+- A claim carried in 10+ countries is not "a remark nobody abroad picked up" even without other-language outlets (IEA energy outlook, EU cyberattack).
