@@ -29,7 +29,7 @@
    the Middle East) that most covered does not already fill (2+ lines), carried in 4+ countries, same
    checks as most covered, no ceremonies or index moves; up to 5 lines (owner, 19 Nov).
 9b. Selection gives a worldwide perspective, not one country's: never tailor to the owner's country.
-   At most 3 US-centred most-covered lines; no daily stock-index moves unless covered in 40+ countries
+   At most 2 US-centred most-covered lines (none in around the world); no daily stock-index moves unless covered in 40+ countries
    (owner gave carte blanche for score improvements, 19 Nov).
 10. Reviewers get how.html and this file before grading.
 11. Improve continuously with independent reviews; log scores in SCORES.md and changes in

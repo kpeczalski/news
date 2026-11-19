@@ -147,7 +147,7 @@ WORLD_BODY = re.compile(r"\b(international|world|united nations|global|agency|or
 # most-covered list, so English-language press weight does not make it a US page
 US_ACTORS = set("""us u.s american americans washington trump hegseth rubio vance pentagon congress senate
 wall dow nasdaq fed""".split())
-US_LINES = 3
+US_LINES = 2
 # a day's stock-index move ("Dow takes major hit") is market noise, not world news, unless it is global
 MARKET_MOVE = re.compile(r"\b(dow|s&p|nasdaq|ftse|nikkei|dax|cac|hang seng|stocks?|shares|markets?|wall street)\b.*"
                          r"\b(hit|falls?|fell|rises?|rose|rall(y|ies)|slumps?|tumbles?|gains?|drops?|surges?|edges?|"
@@ -1884,7 +1884,7 @@ def health(data, state):
     w = []
     lines = data.get("lines", [])
     day = [l for l in lines if l["section"] == "day"]
-    if len(day) < 5:
+    if len(day) < 4:
         w.append("only %d most-covered lines" % len(day))
     if data.get("data_until"):
         lag = (time.time() - time.mktime(time.strptime(data["data_until"], "%Y-%m-%dT%H:%M:%SZ")) + time.timezone) / 60
@@ -2588,6 +2588,8 @@ def render(state, now, cmap, built):
             whl = [h["t"] for h in l.get("headlines", [])] + [l["sentence"]]
             if sum(1 for t in whl if MARKET_MOVE.search(t)) > 0.5 * len(whl):
                 continue                              # a day's index move is not the region's news
+            if sum(1 for t in whl if set(raw_words(t)) & US_ACTORS) >= 0.5 * len(whl):
+                continue                              # a US court or US actor: not the region's own news
             if not cap["world"] or wr in covered or wr in world_regions or not l["sentence"] \
                     or (where and per_country[where] >= PER_COUNTRY):
                 continue                              # one line per region the main list does not already fill

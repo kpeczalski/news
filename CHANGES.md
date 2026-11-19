@@ -321,3 +321,4 @@ After an independent grade of the live page (5 out of 10):
 - Crisis rank: a toll counts only when a fifth of the event's headlines tell of people harmed (the Riyadh skyscraper line ranked first on "Saudi airstrikes kill 11" from 3 of 58 headlines).
 - A story led by the head of a world body (IEA's Birol on the World Energy Outlook) is not a "people" story.
 - New section "// around the world": the biggest story of each region (Africa, Asia-Pacific, Latin America, Europe, Middle East) that most covered does not fill, 4+ countries, same checks; up to 5 lines (owner asked to rethink the sections, 19 Nov).
+- US-centred lines: at most 2 in most covered, none in around the world (a US court case is not the region's own news).
