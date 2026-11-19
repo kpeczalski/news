@@ -17,7 +17,7 @@
    damage to things); recency halves after 6 h; a toll only one side claims counts half; two papers
    of record add 20%. Within a conflict, the deadliest event of the day is its line. A crisis event needs 5+ countries, or 3+ when 10 or more were killed (lives first; Africa and Asia get fewer foreign outlets).
 6. A crisis line says who did what (checked against the headlines; mixed-direction stories are left off) ("Ukrainian strikes kill 9 in Russia"), not who says it,
-   when most headlines state the event as fact. Never invert who attacked whom.
+   when three quarters of headlines state the event as fact; otherwise the line keeps who says it. Never invert who attacked whom.
 7. Sources when a line is opened: the event country's papers of record first (not for
    state-controlled press), then international papers of record, agencies, broadcasters.
 8. Wording: pick a real headline before writing one (for a story told mostly in other languages, a
@@ -26,7 +26,7 @@
 9. It runs without anyone: free GitHub hosting, free Groq model with a small local fallback,
    loaded only when needed. Keep the footprint small.
 4a. Around the world: the biggest story of each region (Africa, Asia-Pacific, Latin America, Europe,
-   the Middle East) that most covered does not already fill (2+ lines), carried in 4+ countries, same
+   the Middle East) that most covered does not already fill (2+ lines), carried in 3+ countries, same
    checks as most covered, no ceremonies or index moves; up to 5 lines (owner, 19 Nov).
 9b. Selection gives a worldwide perspective, not one country's: never tailor to the owner's country.
    At most 2 US-centred most-covered lines (none in around the world); no daily stock-index moves unless covered in 40+ countries

@@ -141,3 +141,8 @@ button.copy {
 @media (prefers-reduced-motion: no-preference) {
   ol.code > li.target { transition: background .6s; }
 }
+
+/* opened line: labelled source list, facts that never break mid-phrase */
+.more .also .lbl { color: var(--dim); padding: 10px 0; flex-basis: 100%; font-size: 12px; }
+.more .facts { display: flex; flex-wrap: wrap; gap: 2px 12px; }
+.more .facts .f { white-space: nowrap; }

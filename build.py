@@ -108,7 +108,7 @@ EN HR SI BK MK AL MJ RI AJ AM GG CY MT""".split(),
 WORLD_REGION_OF = {c: r for r, cs in WORLD_REGIONS.items() for c in cs}
 WORLD_LINES = 5
 CEREMONY = set("anniversary anniversaries celebrates celebrate celebrated celebration commemorates commemoration ceremony mass festival".split())
-WORLD_MIN_COUNTRIES = 4                       # picked up abroad, not only at home
+WORLD_MIN_COUNTRIES = 3                       # picked up abroad, not only at home
 WORLD_MIN_SCORE = 3
 SPARE_WORLD = 1                               # a second candidate per region, in case one gets no sentence
 # Spellings that differ between languages and transliterations, folded to one name for matching.
@@ -1540,6 +1540,9 @@ def event_toll(titles):
 
 
 EVENT_TOLL_SHARE = 0.2
+# a crisis line drops who says it only when three quarters of headlines state the event as fact
+# (a quarter attributing it to one side, "Saudi-led coalition says", keeps the source on the line)
+EVENT_FACT_SHARE = 0.75
 
 
 def toll(titles):
@@ -1767,7 +1770,10 @@ def add_sentences(state, lines, picks, started):
         # model is asked only when none does (a small model invents words; a headline cannot).
         accident = sum(1 for t in titles if set(raw_words(t)) & ACCIDENT_WORDS) >= 0.3 * max(1, len(titles))
         event = l["section"] == "ongoing" or accident     # say the toll: casualties, or none
-        if event and claim and sum(1 for t in titles if not set(raw_words(t)) & HEDGE) >= 0.5 * len(titles):
+        attributed = sum(1 for t in titles if set(raw_words(t)) & (HEDGE | {"reports", "report", "according"}))
+        if event and not claim and attributed >= (1 - EVENT_FACT_SHARE) * len(titles):
+            claim = True                              # a quarter say who says it: the line keeps the source
+        if event and claim and attributed < (1 - EVENT_FACT_SHARE) * len(titles):
             claim = False                             # most headlines state the event as fact
         counted = l["text"]
         if event:                                     # the toll most headlines give counts as counted here

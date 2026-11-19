@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#12161c">
 <meta name="apple-mobile-web-app-title" content="news">
 <title>news</title>
-<link rel="stylesheet" href="style.css?v=13">
+<link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
 <!--page-->
@@ -123,6 +123,7 @@
     });
     if ((l.links || []).length) {
       var also = el("div", "also");
+      also.appendChild(el("span", "lbl", "also reported by"));
       l.links.forEach(function (k) {
         var a = el("a", "", k.d);
         a.href = k.u; a.target = "_blank"; a.rel = "noopener noreferrer";
@@ -131,12 +132,14 @@
       more.appendChild(also);
     }
     var foot = el("div", "foot");
-    var facts = ["first seen " + hhmm(l.first), l.outlets.toLocaleString() + " outlets", plural(l.wordings, "wording")];
+    var facts = ["first seen " + hhmm(l.first), l.outlets.toLocaleString() + " outlets",
+                 plural(l.wordings, "different headline")];
     if (l.related) facts.push(l.related + " related");
-    if (l.other_lang) facts.push(l.other_lang.toLocaleString() + " non-English");
-    var fs = el("span", "", facts.join(" · "));
+    if (l.other_lang) facts.push(l.other_lang.toLocaleString() + " in other languages");
+    var fs = el("span", "facts");
+    facts.forEach(function (f) { fs.appendChild(el("span", "f", f)); });
     var b = bars(l.spark || []);
-    if (b) fs.appendChild(b);
+    if (b) { var sp = el("span", "f"); sp.appendChild(b); sp.appendChild(document.createTextNode(" last 3 h")); fs.appendChild(sp); }
     foot.appendChild(fs);
     var copy = el("button", "copy", "copy link");
     copy.type = "button";
