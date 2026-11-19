@@ -334,3 +334,5 @@ After an independent grade of the live page (5 out of 10):
 - Around the world: a line for every region not already on the page (2+ countries for Africa and Latin America), up to 4 candidates per region, US actors and index moves filtered before choosing.
 - "Also reported by": one outlet per country.
 - Crisis lines (not only accidents) add "no injuries reported" when 2+ headlines say so and none gives a toll.
+- Around the world: no country already on the page (or its conflict); no company or bank deals.
+- Source headlines lose the outlet name stuck to them ("Bangkok Post - ...").

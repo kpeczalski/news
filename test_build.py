@@ -1273,3 +1273,13 @@ class NoHarmCrisis(unittest.TestCase):
 class GrammarJudge(unittest.TestCase):
     def test_no_model_no_judgement(self):
         self.assertEqual(B.grammar_ok([]), {})
+
+
+class StripOutlet(unittest.TestCase):
+    def test_strip(self):
+        self.assertEqual(B.strip_outlet("Bangkok Post - Fire set at home of former Bangladesh leader", "bangkokpost.com"),
+                         "Fire set at home of former Bangladesh leader")
+        self.assertEqual(B.strip_outlet("Mosque set on fire in Israel - Grenada Chronicle – Daily Grenada And Caribbean News",
+                                        "grenadachronicle.com"), "Mosque set on fire in Israel")
+        self.assertEqual(B.strip_outlet("Ukraine - Russia talks resume in Geneva", "bbc.com"),
+                         "Ukraine - Russia talks resume in Geneva")

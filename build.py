@@ -108,6 +108,7 @@ EN HR SI BK MK AL MJ RI AJ AM GG CY MT""".split(),
 }
 WORLD_REGION_OF = {c: r for r, cs in WORLD_REGIONS.items() for c in cs}
 WORLD_LINES = 5
+DEAL_WORDS = set("bank banks takeover stake merger acquisition acquire bid deal unicredit".split())
 CLAIM_ECHO_COUNTRIES = 10                    # a claim carried in this many countries was picked up abroad
 CEREMONY = set("anniversary anniversaries celebrates celebrate celebrated celebration commemorates commemoration ceremony mass festival".split())
 WORLD_MIN_COUNTRIES = 3                       # picked up abroad, not only at home
@@ -1183,6 +1184,27 @@ STATE_PRESS = set("CH RS IR KN SA BM VM CU ER TX BO SY AE QA LA EG".split())
 LOCAL_BIG = 0.75                              # a local outlet counts as major in the top quarter by size
 
 
+def strip_outlet(title, dom):
+    """A headline without the outlet's own name stuck to it ("Bangkok Post - ...", "... - Grenada
+    Chronicle – Daily Grenada And Caribbean News"): the part naming the outlet is cut."""
+    root = re.sub(r"^(www\.|m\.|en\.)", "", dom).split(".")[0].lower()
+    if len(root) < 4:
+        return title
+    parts = re.split(r"\s+[-–|]\s+", title)
+    if len(parts) < 2:
+        return title
+    squash = lambda t: re.sub(r"[^a-z]", "", t.lower())
+    named = lambda p: len(p.split()) <= 9 and (root in squash(p) or squash(p) in root)
+    keep = list(parts)
+    if named(keep[0]):
+        keep = keep[1:]                               # "Bangkok Post - ..."
+    else:
+        cut = next((i for i in range(1, len(keep)) if named(keep[i])), None)
+        if cut is not None:
+            keep = keep[:cut]                         # "... - Grenada Chronicle - Daily Grenada ..."
+    return " - ".join(keep) if keep and len(" ".join(keep).split()) >= 3 else title
+
+
 def sources(s, consensus_keys, local=None, cmap=None):
     """(headlines, links). Renowned outlets from the country where it happened come first (they
     know it best), then the renowned list in order, then major local outlets, then the largest
@@ -1205,7 +1227,7 @@ def sources(s, consensus_keys, local=None, cmap=None):
         if len(heads) < HEADLINES and not slug and keys not in seen_wording:
             seen_wording.add(keys)
             w = wire_of(url)
-            heads.append({"t": title, "d": (w[0] + " via " + dom) if w else dom, "u": url})
+            heads.append({"t": strip_outlet(title, dom), "d": (w[0] + " via " + dom) if w else dom, "u": url})
         elif len(links) < 8:
             c = country_of(dom, cmap) if cmap else None
             if c and c in link_countries:
@@ -2418,6 +2440,8 @@ def render(state, now, cmap, built):
         ents3 = set(top_ents(s)[:3])
         if any(same_affair(s, ps, pe) or len(ents3 & set(top_ents(ps)[:4])) >= 2 for _, ps, pe in shown_stories):
             continue                                  # a follow-up of a line already shown ("Seoul watches summit")
+        if headline_share(s, COMPANY | DEAL_WORDS) >= 0.3 and headline_share(s, OFFICE) < 0.3:
+            continue                                  # a company's affairs are not the region's news
         if headline_share(s, CEREMONY) >= 0.4:
             continue                                  # anniversaries and ceremonies are not the region's news
         wt = [t[0] for t in s["ti"].values()]
@@ -2676,6 +2700,9 @@ def render(state, now, cmap, built):
                 continue                              # a day's index move is not the region's news
             if sum(1 for t in whl if set(raw_words(t)) & US_ACTORS) >= 0.5 * len(whl):
                 continue                              # a US court or US actor: not the region's own news
+            on_page = {k.get("_where_kept") for k in kept} - {None}
+            if where and (where in on_page or CONFLICT.get(where) in on_page):
+                continue                              # a country (or its conflict) already on the page
             if not cap["world"] or wr in covered or wr in world_regions or not l["sentence"] \
                     or (where and per_country[where] >= PER_COUNTRY):
                 continue                              # one line per region the main list does not already fill
