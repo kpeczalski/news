@@ -26,7 +26,7 @@
 9. It runs without anyone: free GitHub hosting, free Groq model with a small local fallback,
    loaded only when needed. Keep the footprint small.
 4a. Around the world: the biggest story of each region (Africa, Asia-Pacific, Latin America, Europe,
-   the Middle East) that most covered does not already fill (2+ lines), carried in 3+ countries, same
+   the Middle East) not already on the page, carried in 3+ countries (2+ for Africa and Latin America), same
    checks as most covered, no ceremonies or index moves; up to 5 lines (owner, 19 Nov).
 9b. Selection gives a worldwide perspective, not one country's: never tailor to the owner's country.
    At most 2 US-centred most-covered lines (none in around the world); no daily stock-index moves unless covered in 40+ countries

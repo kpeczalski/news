@@ -331,3 +331,5 @@ After an independent grade of the live page (5 out of 10):
 - A claim carried in 10+ countries is not "a remark nobody abroad picked up" even without other-language outlets (IEA energy outlook, EU cyberattack).
 - Model-written lines get a proofread by the hosted model; a line that is not one natural sentence ("IEA says Iran war crisis reshapes global oil energy no return") is left off.
 - A refused model line gets one rewrite from the headlines; it is shown only if it passes every check and the proofread.
+- Around the world: a line for every region not already on the page (2+ countries for Africa and Latin America), up to 4 candidates per region, US actors and index moves filtered before choosing.
+- "Also reported by": one outlet per country.

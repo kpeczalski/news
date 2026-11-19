@@ -111,8 +111,9 @@ WORLD_LINES = 5
 CLAIM_ECHO_COUNTRIES = 10                    # a claim carried in this many countries was picked up abroad
 CEREMONY = set("anniversary anniversaries celebrates celebrate celebrated celebration commemorates commemoration ceremony mass festival".split())
 WORLD_MIN_COUNTRIES = 3                       # picked up abroad, not only at home
+WORLD_MIN_BY_REGION = {"africa": 2, "latin_america": 2}   # regions the English-language press covers least
 WORLD_MIN_SCORE = 3
-SPARE_WORLD = 1                               # a second candidate per region, in case one gets no sentence
+SPARE_WORLD = 3                               # a second candidate per region, in case one gets no sentence
 # Spellings that differ between languages and transliterations, folded to one name for matching.
 ALIASES = {"kiev": "kyiv", "kiew": "kyiv", "kijev": "kyiv", "peking": "beijing", "bombay": "mumbai",
            "calcutta": "kolkata", "rangoon": "yangon", "burma": "myanmar", "ivory coast": "cote divoire",
@@ -1199,13 +1200,17 @@ def sources(s, consensus_keys, local=None, cmap=None):
         rows.append((tier, pr, -(len(consensus_keys & set(keys))), -OUTLET_SIZE.get(dom, 0),
                      dom, title, url, slug, keys))
     rows.sort()
-    heads, links = [], []
+    heads, links, link_countries = [], [], set()
     for _, _, _, _, dom, title, url, slug, keys in rows:
         if len(heads) < HEADLINES and not slug and keys not in seen_wording:
             seen_wording.add(keys)
             w = wire_of(url)
             heads.append({"t": title, "d": (w[0] + " via " + dom) if w else dom, "u": url})
         elif len(links) < 8:
+            c = country_of(dom, cmap) if cmap else None
+            if c and c in link_countries:
+                continue                              # one outlet per country: the spread, not local stations
+            link_countries.add(c)
             links.append({"d": dom, "u": url})
     return heads, links
 
@@ -2394,7 +2399,7 @@ def render(state, now, cmap, built):
     world_seen = Counter()
     shown_now = {l["id"] for l in lines}
     pool = [sid for sid, st in stories.items() if len(st["d"]) >= MIN_OUTLETS
-            and WORLD_REGION_OF.get(event_country(st) or "") and countries(st) >= WORLD_MIN_COUNTRIES]
+            and WORLD_REGION_OF.get(event_country(st) or "") and countries(st) >= 2]
     for sid in sorted(pool, key=lambda x: -score(stories[x])[0]):
         if sid not in stories or sid in shown_now:
             continue
@@ -2404,7 +2409,8 @@ def render(state, now, cmap, built):
         if not wr or world_seen[wr] >= 1 + SPARE_WORLD:
             continue
         mem = members(s)
-        if len(mem) < MIN_OUTLETS or countries(s) < WORLD_MIN_COUNTRIES or score(s)[0] < WORLD_MIN_SCORE:
+        if len(mem) < MIN_OUTLETS or countries(s) < WORLD_MIN_BY_REGION.get(wr, WORLD_MIN_COUNTRIES) \
+                or score(s)[0] < WORLD_MIN_SCORE:
             continue
         if is_crisis(s) or s["e"].get("T:celeb", 0) >= 0.2 * max(1, s["n"]) \
                 or s["e"].get("T:sport", 0) >= 0.3 * max(1, s["n"]) or people_story(s):
@@ -2414,6 +2420,10 @@ def render(state, now, cmap, built):
             continue                                  # a follow-up of a line already shown ("Seoul watches summit")
         if headline_share(s, CEREMONY) >= 0.4:
             continue                                  # anniversaries and ceremonies are not the region's news
+        wt = [t[0] for t in s["ti"].values()]
+        if sum(1 for t in wt if MARKET_MOVE.search(t)) > 0.5 * len(wt) or \
+                sum(1 for t in wt if set(raw_words(t)) & US_ACTORS) >= 0.5 * len(wt):
+            continue                                  # index moves and US actors: not the region's own news
         line = make_line(sid, s, mem, "world", where)
         if line is None:
             continue
@@ -2659,8 +2669,7 @@ def render(state, now, cmap, built):
             wr = l.pop("_region", None)
             # (a region with 2+ most-covered lines is covered; one line can be placed oddly: the
             # Myanmar genocide ruling has the Gambia, which brought the case, as its country)
-            main = Counter(WORLD_REGION_OF.get(k.get("_where_kept") or "") for k in kept if k["section"] in ("day", "new"))
-            covered = {r for r, n in main.items() if n >= 2}
+            covered = set()                           # every region gets its own line (owner: 9 everywhere)
             whl = [h["t"] for h in l.get("headlines", [])] + [l["sentence"]]
             if sum(1 for t in whl if MARKET_MOVE.search(t)) > 0.5 * len(whl):
                 continue                              # a day's index move is not the region's news
