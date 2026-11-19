@@ -52,3 +52,9 @@ readability 10.
 - Grades by round: 8/6/8 -> 7/6/8 (new section) -> 6/6/8 -> 8/6.5/8.5.
 - Added: "// around the world" (one line per region not filled by most covered), US cap 2, crisis attribution kept at a quarter, deadly events at 3 countries and no-harm events at 10, lives first after backups, clearer opened line, no "+0 outlets/h".
 - Limits named by reviewers: Sudan, DR Congo, Sahel rarely reach 3+ countries in headlines; thin weekday evenings.
+
+## 2026-11-19 22:00 (Helsinki), push for 9 (panels of 3 graders: 2 sonnet, 1 opus; averages)
+- Panel 1: 7.7 / 6.8 / 8.3. Panel 2: 7.8 / 6.7 / 8.6. Panel 3: 7.6 / 7.2 / 8.5. Panel 4: 7.5 / 7.0 / 8.4.
+- Opus grades run about one point above sonnet.
+- Changes tonight: proofread and rewrite of model lines, around the world for every region (no repeats, no company/tech, no conflict knock-ons), crisis attribution at a quarter, neutral possessives on contested land, no-harm events need 10 countries, people affected before damage, cleaner sources (no outlet names, factboxes, commentary), one outlet per country under a line.
+- Remaining points are mostly LIMITs on a thin weekday evening: 4 most-covered lines, no Sudan/DR Congo/Sahel event in 3+ countries, one-sided tolls.
