@@ -337,3 +337,5 @@ After an independent grade of the live page (5 out of 10):
 - Around the world: no country already on the page (or its conflict); no company or bank deals.
 - Source headlines lose the outlet name stuck to them ("Bangkok Post - ...").
 - Around the world: no tech or software stories (a Java flaw is not Europe's news).
+- Naval mines, seizures and hijackings are crisis events (Hormuz tankers).
+- Around the world: ordered by countries; Europe needs 6 countries.

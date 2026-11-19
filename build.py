@@ -48,7 +48,8 @@ DEATH_WORDS = set("killed kills kill dead dies died death deaths wounded injured
 CRISIS_WORDS = set("""attack attacks attacked barrage airstrike airstrikes strike strikes struck bombing bombed
 shelling shelled missile missiles drone drones offensive invasion militants fighting clashes gunmen ambush
 earthquake flood floods cyclone hurricane typhoon famine massacre bomb bombs bombings blast blasts explosion
-explosions explosive assassination assassinated shooting gunfire tanks incursion incursions raid raids""".split())
+explosions explosive assassination assassinated shooting gunfire tanks incursion incursions raid raids
+mines seized hijacked""".split())
 # An accident is not a crisis, even where there is a war, unless the world covers it.
 ACCIDENT_WORDS = set("""crash crashes crashed collision collides collided accident accidents collapse collapses
 collapsed collide derails derailed capsizes capsized stampede blaze mine miners methane leak taxiway runway""".split())
@@ -113,7 +114,7 @@ DEAL_WORDS = set("bank banks takeover stake merger acquisition acquire bid deal 
 CLAIM_ECHO_COUNTRIES = 10                    # a claim carried in this many countries was picked up abroad
 CEREMONY = set("anniversary anniversaries celebrates celebrate celebrated celebration commemorates commemoration ceremony mass festival".split())
 WORLD_MIN_COUNTRIES = 3                       # picked up abroad, not only at home
-WORLD_MIN_BY_REGION = {"africa": 2, "latin_america": 2}   # regions the English-language press covers least
+WORLD_MIN_BY_REGION = {"africa": 2, "latin_america": 2, "europe": 6}   # (Europe is covered most)   # regions the English-language press covers least
 WORLD_MIN_SCORE = 3
 SPARE_WORLD = 3                               # a second candidate per region, in case one gets no sentence
 # Spellings that differ between languages and transliterations, folded to one name for matching.
@@ -2749,7 +2750,7 @@ def render(state, now, cmap, built):
         sorted([l for l in lines if l["section"] == "day"], key=lambda l: -l["countries"]) + \
         sorted([l for l in lines if l["section"] == "ongoing"],          # lives first, also after a backup
                key=lambda l: event_toll([t[0] for t in stories[l["id"]]["ti"].values()]) == (0, 0)) + \
-        [l for l in lines if l["section"] == "world"]
+        sorted([l for l in lines if l["section"] == "world"], key=lambda l: -l["countries"])
     for l in lines:
         l.pop("_where_kept", None)
     return {
