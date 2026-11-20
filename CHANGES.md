@@ -352,3 +352,7 @@ After an independent grade of the live page (5 out of 10):
 - Good news: no coverage-score minimum; a good story needs 3+ countries or 10+ outlets.
 - Discoveries: a story carried by a science outlet (New Scientist, Live Science, Space.com, The Conversation, ...) is listed with that outlet's own headline when one or two outlets carry it; "NASA's" matches "nasa"; "so far away" is not a time frame.
 - Good news reviewed (2 graders, 6.5-7 / 4 / 8): discoveries must report an advance (no polls, projections, demand figures, extinctions); state media praising their own government is left off; a good story must say where; 5+ countries strictly; praise words ("impressive", "awe-inspiring") refused; a short page says "a quiet hour for good news".
+
+## 2026-11-20 (Helsinki), good news of the week (owner)
+- The page keeps every good line of the last 7 days and shows the best: 10 good news, 6 discoveries, 5 around the world; widest first; "+" on today's.
+- Gaps fixed: "glitch" is bad news (Voyager glitch shown instead of the milestone); a wreck found is a discovery; "born" is good news (rare rhino at Chester Zoo); GDELT's crisis tag no longer vetoes good news; science lines are not vetoed by tone; no cut after "128 years"; 4+ countries.

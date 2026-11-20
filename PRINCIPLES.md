@@ -4,7 +4,9 @@
    not wars, attacks or disasters. A story is good news when most of its articles read positive (GDELT
    tone: half or more positive, at most a quarter negative), its headlines tell of no harm, and they say
    something good happened (a rescue, a cure, a peace deal, a record, a return) or tell a research advance.
-   Money, markets and company affairs are not good news here. Sections: `// good news` (5+ countries),
+   Money, markets and company affairs are not good news here. WEEKLY (owner, 20 Nov): every good line of
+   the last 7 days is kept and the page shows the week's best, widest first, "+" on today's. Sections:
+   `// good news this week` (4+ countries),
    `// discoveries` (research, 2+ countries, or one science outlet's own report), `// around the world` (one good story per region).
    The crises rules below (4-6) are kept in the code, switched off (GOOD_ONLY=0 turns the old page back on).
 

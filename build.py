@@ -67,13 +67,13 @@ GOOD_POS_SHARE = 0.5                          # (unless half read positive)
 GOOD_NEG_SHARE = 0.4                          # a story whose articles mostly read negative is not good news
 GOOD_MIN_SCORE = 0                            # good news is rarer: a smaller story can lead
 GOOD_MIN_OUTLETS = 10                         # ... or 10+ outlets in one country
-GOOD_MIN_COUNTRIES = 5                        # most covered good news: outlets in 5+ countries
-BAD_WORDS = set("""killed kills kill dead dies died death deaths wounded injured attack attacks strike strikes
+GOOD_MIN_COUNTRIES = 4                        # most covered good news: outlets in 5+ countries
+BAD_WORDS = set("""glitch glitches outage fails failed failure killed kills kill dead dies died death deaths wounded injured attack attacks strike strikes
 war bomb bombing shooting crash crashed collapse fire blaze flood floods earthquake missing murder murdered
 arrested charged convicted sentenced jailed accused abuse fraud scandal sanctions threat threatens warns
 crisis disaster tragedy victims hostage hostages kidnapped raid raids protest protests riot riots clashes
 recession layoffs cuts outbreak virus disease cancer toxic pollution drought famine refugees migrants""".split())
-GOOD_WORDS = set("""breakthrough breakthroughs cure cured cures rescue rescued rescues saved saves peace ceasefire
+GOOD_WORDS = set("""born birth hatched breakthrough breakthroughs cure cured cures rescue rescued rescues saved saves peace ceasefire
 truce treaty restored restores recovers recovery reunited reunites donates donated donation volunteers vaccine
 vaccines conservation protected endangered milestone eradicated eliminated renewable reforestation planted freed
 exonerated survivor survives transplant heals healed lifesaving reunion homecoming discovery discovered
@@ -83,7 +83,7 @@ LIGHT_WORDS = set("""awards award cma cmas grammy grammys oscars emmy album song
 celebrity fans movie film films tv series season episode premiere trailer festival music musician band rapper
 christmas thanksgiving holiday recipe recipes tips review hotel fashion style hairstyle birthday wedding
 royal dating actress actor show shows game games netflix disney""".split())
-SCIENCE_WORDS = set("""study studies researchers scientists discovered discovery breakthrough telescope
+SCIENCE_WORDS = set("""wreck shipwreck archaeology study studies researchers scientists discovered discovery breakthrough telescope
 astronomers fossil fossils species vaccine therapy gene genes dna physicists quantum archaeologists
 archaeological spacecraft planet planets galaxy galaxies comet asteroid nasa esa cern experiment fusion voyager
 probe orbit astronauts rover moon mars jupiter saturn solar eclipse dinosaur dinosaurs ancestors extinct
@@ -1810,6 +1810,8 @@ def common_headline(titles, consensus_keys, claim=False, renowned=None, counted=
         if cut and set(raw_words(title_sc[cut.end():])) & {"says", "said", "say", "saying", "according",
                                                            "claims", "claim", "reportedly", "report", "reports"}:
             cut = None                                # never cut off who says the main clause
+        if cut and re.search(r"\d+ (years|days|months|weeks|hours|decades|centuries)$", title_sc[:cut.start()]):
+            cut = None                                # "found 128 years" needs its "after sinking"
         if cut and re.match(r"[A-Z]", title_sc[cut.end():]) and re.search(r"\b[A-Z][\w'-]*$", title_sc[:cut.start()]):
             cut = None                                # a list of names ("with Xi, Putin ...") is not an add-on
         if cut and event and TOLL_RE.search(digits(title_sc[cut.start():])):
@@ -2177,6 +2179,36 @@ def foreign_stories(state, cmap, english_tops, english_words=()):
     return made
 
 
+WEEK_SLOTS = 7 * 96                          # good news is kept for a week (15-minute slots)
+WEEK_LINES = {"day": 10, "science": 6, "world": 5}
+
+
+def good_week(state, lines, now):
+    """Good news of the week: every good line shown in the last 7 days is kept (its widest version) and
+    the page shows the week's best: most countries first, then most outlets; the newest story wins a
+    tie. A story still growing today is updated in place."""
+    week = state.setdefault("gw", {})
+    for l in lines:
+        if l["section"] == "new":
+            l = dict(l, section="day")                # this week's good news, however fresh
+        if l["section"] not in WEEK_LINES:
+            continue
+        old = week.get(l["id"])
+        keep = dict(l, _seen=old["_seen"] if old else now, _last=now)
+        if old and old["countries"] > l["countries"] and old["section"] == l["section"]:
+            keep = dict(old, _last=now)               # the widest version stays
+        week[l["id"]] = keep
+    for sid in [k for k, v in week.items() if now - v["_seen"] > WEEK_SLOTS]:
+        del week[sid]
+    out = []
+    for sec, n in WEEK_LINES.items():
+        rows = sorted((v for v in week.values() if v["section"] == sec),
+                      key=lambda v: (-v["countries"], -v["outlets"], -v["_seen"]))[:n]
+        out += [{k: x for k, x in v.items() if not k.startswith("_")} | {"today": now - v["_seen"] < 96}
+                for v in rows]
+    return out
+
+
 def render(state, now, cmap, built):
     stories = state["stories"]
     if state.get("fx") and AI != "off":
@@ -2305,7 +2337,7 @@ def render(state, now, cmap, built):
         if toned >= 3 and neg > GOOD_NEG_SHARE and pos < GOOD_POS_SHARE:
             return False                              # the articles themselves read as bad news
         n = max(1, s["n"])
-        if s["e"].get("T:crisis", 0) >= 0.3 * n or s["e"].get("T:death", 0) >= 0.1 * n:
+        if s["e"].get("T:death", 0) >= 0.2 * n:   # (GDELT's crisis tag also marks endangered rhinos: not used)
             return False
         if headline_share(s, BAD_WORDS) >= 0.15:
             return False
@@ -2326,7 +2358,7 @@ def render(state, now, cmap, built):
             and headline_share(s, ADVANCE_WORDS) >= 0.3 and headline_share(s, NOT_DISCOVERY) < 0.2 \
             and sum(1 for d in s["d"] if d in STATE_MEDIA) < 0.5 * len(s["d"]) \
             and headline_share(s, LIGHT_WORDS | OFFICE) < 0.2 \
-            and (toned < 3 or neg <= 0.6) and headline_share(s, COMPANY | DEAL_WORDS | MARKET_WORDS) < 0.3
+            and headline_share(s, COMPANY | DEAL_WORDS | MARKET_WORDS) < 0.3
 
     def conflict_of(s):
         """The armed conflict a story belongs to: where it happened, or a conflict country most of its
@@ -2942,6 +2974,8 @@ def render(state, now, cmap, built):
         sorted([l for l in lines if l["section"] == "world"], key=lambda l: -l["countries"])
     for l in lines:
         l.pop("_where_kept", None)
+    if GOOD_ONLY:
+        lines = good_week(state, lines, now)
     return {
         "v": 4,
         "ai": ai,
@@ -2951,7 +2985,7 @@ def render(state, now, cmap, built):
         "history_hours": min(24, round((now - min([int(k) for k in state["arts"]] or [now]) + 1) / 4)),
         "ongoing_days": n_days,
         "screened": {"outlets": len(state["dom"]), "articles": sum(state["arts"].values())},
-        "note": NOTE or ("// a quiet hour for good news" if GOOD_ONLY and len(lines) < 4 else ""),
+        "note": NOTE or ("// a quiet week for good news" if GOOD_ONLY and len(lines) < 4 else ""),
         "lines": lines,
     }
 
