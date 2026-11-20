@@ -2030,7 +2030,7 @@ def health(data, state):
     w = []
     lines = data.get("lines", [])
     day = [l for l in lines if l["section"] == "day"]
-    if len(day) < 4:
+    if len(day) < 4 and not GOOD_ONLY:            # (good news of the week fills up over days)
         w.append("only %d most-covered lines" % len(day))
     if data.get("data_until"):
         lag = (time.time() - time.mktime(time.strptime(data["data_until"], "%Y-%m-%dT%H:%M:%SZ")) + time.timezone) / 60
