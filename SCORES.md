@@ -61,3 +61,6 @@ readability 10.
 
 ## 2026-11-19 21:00 (Helsinki), good-news page, first review (sonnet + opus)
 - Accuracy 6.5 / 7.0, selection 4.0 / 4.0, readability 8.0 / 8.0. Weak lines filled a thin page (state-media PR, a viral video, a religion projection, a demand statistic). Fixed by stricter gates; the page now prefers few lines.
+
+## 2026-11-20 10:30 (Helsinki), good news of the week, first morning
+- Sonnet 7.5 / 5.5 / 8.0, opus 8.0 / 5.5 / 8.0. Thin by design on day one (LIMIT). Fixed: grammar of printed headlines, disease-mechanism studies, Kushner statement as good news, hourly pace on a weekly page.

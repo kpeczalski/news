@@ -68,7 +68,7 @@ GOOD_NEG_SHARE = 0.4                          # a story whose articles mostly re
 GOOD_MIN_SCORE = 0                            # good news is rarer: a smaller story can lead
 GOOD_MIN_OUTLETS = 10                         # ... or 10+ outlets in one country
 GOOD_MIN_COUNTRIES = 4                        # most covered good news: outlets in 5+ countries
-BAD_WORDS = set("""glitch glitches outage fails failed failure killed kills kill dead dies died death deaths wounded injured attack attacks strike strikes
+BAD_WORDS = set("""mutation mutations abnormal disorder disorders syndrome glitch glitches outage fails failed failure killed kills kill dead dies died death deaths wounded injured attack attacks strike strikes
 war bomb bombing shooting crash crashed collapse fire blaze flood floods earthquake missing murder murdered
 arrested charged convicted sentenced jailed accused abuse fraud scandal sanctions threat threatens warns
 crisis disaster tragedy victims hostage hostages kidnapped raid raids protest protests riot riots clashes
@@ -2886,9 +2886,11 @@ def render(state, now, cmap, built):
         (same_event(cs, stories[l["id"]]) or same_affair(stories[l["id"]], cs, ce) or same_scene(cs, stories[l["id"]]))
         for cs, ce in crisis_ev)]
     # Model-written lines get a proofread: a line that is not a natural sentence is left off.
-    judged = grammar_ok([l["sentence"] for l in lines if l.get("by") == "model" and l["sentence"]])
+    # (on the good-news page every line, also a printed headline: "Chester Zoo cameras captures birth")
+    proof = lambda l: l["sentence"] and (l.get("by") == "model" or GOOD_ONLY)
+    judged = grammar_ok([l["sentence"] for l in lines if proof(l)])
     for l in lines:
-        if l.get("by") == "model" and judged.get(l["sentence"]) is False:
+        if proof(l) and judged.get(l["sentence"]) is False:
             DIAG.setdefault("skipped", []).append({"why": "not a sentence", "score": l["score"], "line": l["sentence"]})
             titles, shown_t, _, ckeys, _, persons = picks[l["id"]]
             again = digits(rewrite_line(l["sentence"], shown_t or titles))
@@ -2989,7 +2991,8 @@ def render(state, now, cmap, built):
         "history_hours": min(24, round((now - min([int(k) for k in state["arts"]] or [now]) + 1) / 4)),
         "ongoing_days": n_days,
         "screened": {"outlets": len(state["dom"]), "articles": sum(state["arts"].values())},
-        "note": NOTE or ("// a quiet week for good news" if GOOD_ONLY and len(lines) < 4 else ""),
+        "good": GOOD_ONLY,
+        "note": NOTE or ("// more good news as the week fills up" if GOOD_ONLY and len(lines) < 4 else ""),
         "lines": lines,
     }
 
