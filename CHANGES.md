@@ -357,3 +357,4 @@ After an independent grade of the live page (5 out of 10):
 - The page keeps every good line of the last 7 days and shows the best: 10 good news, 6 discoveries, 5 around the world; widest first; "+" on today's.
 - Gaps fixed: "glitch" is bad news (Voyager glitch shown instead of the milestone); a wreck found is a discovery; "born" is good news (rare rhino at Chester Zoo); GDELT's crisis tag no longer vetoes good news; science lines are not vetoed by tone; no cut after "128 years"; 4+ countries.
 - Health check: no "few most-covered lines" warning on the good-news page.
+- Good news is something that happened, not what someone says (Kushner "Europe united" left off); kept stories are re-checked each build.

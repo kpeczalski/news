@@ -2349,6 +2349,8 @@ def render(state, now, cmap, built):
             return False                              # a state's own press praising it is not independent news
         if not event_country(s):
             return False                              # a good story says where it happened
+        if headline_share(s, SPEECH) >= 0.4:
+            return False                              # good news is something that happened, not what someone says
         return headline_share(s, GOOD_WORDS) >= 0.3
 
     def science(s):
@@ -2975,6 +2977,8 @@ def render(state, now, cmap, built):
     for l in lines:
         l.pop("_where_kept", None)
     if GOOD_ONLY:
+        for sid in [k for k in state.get("gw", {}) if k in stories and not (good(stories[k]) or science(stories[k]))]:
+            del state["gw"][sid]                      # a kept story the rules no longer call good
         lines = good_week(state, lines, now)
     return {
         "v": 4,
