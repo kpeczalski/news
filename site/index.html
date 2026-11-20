@@ -9,8 +9,8 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#12161c">
-<meta name="apple-mobile-web-app-title" content="news">
-<title>news</title>
+<meta name="apple-mobile-web-app-title" content="+news">
+<title>+news</title>
 <link rel="stylesheet" href="style.css?v=16">
 </head>
 <body>
@@ -18,7 +18,7 @@
 <div class="window">
   <div class="bar">
     <div class="dots" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="tab" id="tab">today.news</div>
+    <div class="tab" id="tab">+news</div>
   </div>
   <ol class="code" id="code" aria-live="off">
     <li class="note"><span class="c">// loading. Stories appear here, most widely reported first.</span></li>
@@ -197,7 +197,7 @@
     DATA_GOOD = !!data.good;
     shown = data;
     var code = document.getElementById("code");
-    document.getElementById("tab").textContent = (data.day || "today") + ".news";
+    document.getElementById("tab").textContent = "+news";
     code.textContent = "";
     var found = false, section = null;
     var hours = data.history_hours || 24;

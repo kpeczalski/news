@@ -1,4 +1,4 @@
-# facts
+# +news
 
 What most news outlets report right now, in the words they share. Ranked by how many
 differently worded reports carry a story, with how fast coverage is growing.

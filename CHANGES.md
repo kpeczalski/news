@@ -359,3 +359,4 @@ After an independent grade of the live page (5 out of 10):
 - Health check: no "few most-covered lines" warning on the good-news page.
 - Good news is something that happened, not what someone says (Kushner "Europe united" left off); kept stories are re-checked each build.
 - Good-news page reviewed (sonnet 7.5/5.5/8, opus 8/5.5/8): every line is proofread, also printed headlines ("cameras captures"); mutation/abnormal/disorder count as bad news; under each line "N countries · N outlets" instead of the hourly pace; the "more good news as the week fills up" note is grey, not a warning.
+- Name: "+news" (owner). Kept stories whose line tells bad news are dropped from the week; a rewritten line has no full stop.

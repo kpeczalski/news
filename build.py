@@ -2896,7 +2896,7 @@ def render(state, now, cmap, built):
             again = digits(rewrite_line(l["sentence"], shown_t or titles))
             if again and not check_sentence(again, titles, False, ckeys, "claim" in l["tags"], l["text"],
                                             persons=persons) and grammar_ok([again]).get(again):
-                l["sentence"] = again                 # the rewrite passes every check and the proofread
+                l["sentence"] = again.rstrip(".")     # the rewrite passes every check and the proofread
             else:
                 l["dropped"] = True
     lines = [l for l in lines if not l.pop("dropped", False)]
@@ -2979,7 +2979,9 @@ def render(state, now, cmap, built):
     for l in lines:
         l.pop("_where_kept", None)
     if GOOD_ONLY:
-        for sid in [k for k in state.get("gw", {}) if k in stories and not (good(stories[k]) or science(stories[k]))]:
+        for sid in [k for k, v in state.get("gw", {}).items()
+                    if (k in stories and not (good(stories[k]) or science(stories[k])))
+                    or set(raw_words(v.get("sentence") or "")) & BAD_WORDS]:
             del state["gw"][sid]                      # a kept story the rules no longer call good
         lines = good_week(state, lines, now)
     return {

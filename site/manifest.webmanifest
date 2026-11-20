@@ -1,6 +1,6 @@
 {
- "name": "news",
- "short_name": "news",
+ "name": "+news",
+ "short_name": "+news",
  "description": "What the world's press reports most, in the words outlets share.",
  "start_url": "./",
  "scope": "./",
