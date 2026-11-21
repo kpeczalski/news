@@ -1,0 +1,3 @@
+# Outlets listed here are ignored entirely. One domain per line, e.g. example.com
+# Empty by default: which outlets to exclude is the publisher's decision, and this file is
+# published on the site so readers can see it.
